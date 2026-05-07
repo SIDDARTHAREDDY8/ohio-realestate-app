@@ -216,6 +216,9 @@ export default defineConfig({
   },
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
+  // Supports GitHub Pages deployment via VITE_BASE_PATH env var
+  // e.g. VITE_BASE_PATH=/ohio-realestate-app/ pnpm build
+  base: process.env.VITE_BASE_PATH ?? "/",
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

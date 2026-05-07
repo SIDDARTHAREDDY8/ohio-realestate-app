@@ -6,7 +6,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Router } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
@@ -17,20 +17,25 @@ import MLInsights from "./pages/MLInsights";
 import EconomicIndicators from "./pages/EconomicIndicators";
 import About from "./pages/About";
 
-function Router() {
+// import.meta.env.BASE_URL is "/" in dev and "/ohio-realestate-app/" on GitHub Pages
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "") || "";
+
+function AppRouter() {
   return (
-    <DashboardLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/county-explorer" component={CountyExplorer} />
-        <Route path="/market-trends" component={MarketTrends} />
-        <Route path="/ml-insights" component={MLInsights} />
-        <Route path="/economic-indicators" component={EconomicIndicators} />
-        <Route path="/about" component={About} />
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </DashboardLayout>
+    <Router base={BASE}>
+      <DashboardLayout>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/county-explorer" component={CountyExplorer} />
+          <Route path="/market-trends" component={MarketTrends} />
+          <Route path="/ml-insights" component={MLInsights} />
+          <Route path="/economic-indicators" component={EconomicIndicators} />
+          <Route path="/about" component={About} />
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </Switch>
+      </DashboardLayout>
+    </Router>
   );
 }
 
@@ -40,7 +45,7 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AppRouter />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
