@@ -120,25 +120,25 @@ export function useLiveData(): LiveData {
     },
     ohio_median_home_value: {
       value: kpis.statewide?.avg_home_value ?? null,
-      date: "2023 ACS",
+      date: "ACS 5-yr (latest)",
       source: "Census ACS",
       isLive: false,
     },
     ohio_median_rent: {
       value: kpis.statewide?.avg_rent ?? null,
-      date: "2023 ACS",
+      date: "ACS 5-yr (latest)",
       source: "Census ACS",
       isLive: false,
     },
     ohio_median_income: {
       value: null,
-      date: "2023 ACS",
+      date: "ACS 5-yr (latest)",
       source: "Census ACS",
       isLive: false,
     },
     ohio_homeownership_rate: {
       value: kpis.statewide?.avg_homeownership_rate ?? null,
-      date: "2023 ACS",
+      date: "ACS 5-yr (latest)",
       source: "Census ACS",
       isLive: false,
     },
@@ -200,10 +200,13 @@ export function useLiveData(): LiveData {
 
         if (censusResult.status === "fulfilled" && censusResult.value) {
           const c = censusResult.value;
-          next.ohio_median_home_value = { value: c.median_home_value, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
-          next.ohio_median_rent = { value: c.median_rent, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
-          next.ohio_median_income = { value: c.median_income, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
-          next.ohio_homeownership_rate = { value: c.homeownership_rate, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
+          // 2023 ACS 5-Year is the latest available (released Dec 2024)
+          // Census publishes with ~12-month lag — no 2024/2025 data exists yet
+          const acsLabel = "2023 ACS 5-yr";
+          next.ohio_median_home_value = { value: c.median_home_value, date: acsLabel, source: "Census ACS", isLive: true };
+          next.ohio_median_rent = { value: c.median_rent, date: acsLabel, source: "Census ACS", isLive: true };
+          next.ohio_median_income = { value: c.median_income, date: acsLabel, source: "Census ACS", isLive: true };
+          next.ohio_homeownership_rate = { value: c.homeownership_rate, date: acsLabel, source: "Census ACS", isLive: true };
         }
 
         return next;
