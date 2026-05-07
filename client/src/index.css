@@ -1,10 +1,17 @@
-/* Ohio Real Estate Market Intelligence Platform
-   Design System: "Ohio Blueprint"
-   - Dark navy sidebar (#0F172A), clean white main canvas
-   - Ohio state blue (#1D4ED8) as primary accent
-   - DM Sans for UI, IBM Plex Mono for data values
-   - Blueprint grid texture as background motif
-*/
+/*
+ * Ohio Real Estate Market Intelligence Platform
+ * Design: "Data Terminal" — dense, monospace-first, no decorative chrome
+ * Inspired by: Bloomberg Terminal, Grafana, dbt docs, Metabase
+ * Anti-patterns avoided: gradient overlays, glowing hero images, oversized KPI cards,
+ *   blueprint grid textures, rounded everything, Inter font for data
+ *
+ * Core principles:
+ *   1. Numbers are the hero — IBM Plex Mono for ALL data values
+ *   2. Information density > whitespace
+ *   3. Color communicates meaning (green=up, red=down, amber=warning) not decoration
+ *   4. Borders and lines create structure, not shadows and cards
+ *   5. Dark sidebar is a navigation tool, not a branding element
+ */
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -51,43 +58,53 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Ohio Blueprint: Light mode */
-  --background: oklch(0.985 0.002 240);
-  --foreground: oklch(0.145 0.025 240);
+  --radius: 0.25rem;  /* tight corners — data tools don't round everything */
+
+  /* Off-white background — not pure white, not gray */
+  --background: oklch(0.975 0.002 240);
+  --foreground: oklch(0.12 0.01 240);
+
+  /* Panels and tables */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.025 240);
+  --card-foreground: oklch(0.12 0.01 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.025 240);
-  /* Ohio state blue */
-  --primary: oklch(0.45 0.18 255);
-  --primary-foreground: oklch(0.98 0.005 255);
-  --secondary: oklch(0.96 0.008 240);
-  --secondary-foreground: oklch(0.25 0.02 240);
-  --muted: oklch(0.96 0.005 240);
-  --muted-foreground: oklch(0.52 0.018 240);
-  --accent: oklch(0.94 0.015 255);
-  --accent-foreground: oklch(0.35 0.15 255);
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.90 0.008 240);
-  --input: oklch(0.90 0.008 240);
-  --ring: oklch(0.45 0.18 255);
-  /* Charts: Ohio blue palette */
-  --chart-1: oklch(0.45 0.18 255);
-  --chart-2: oklch(0.58 0.16 220);
-  --chart-3: oklch(0.65 0.14 185);
-  --chart-4: oklch(0.72 0.12 150);
-  --chart-5: oklch(0.78 0.10 120);
-  /* Sidebar: Dark navy */
-  --sidebar: oklch(0.13 0.025 255);
-  --sidebar-foreground: oklch(0.88 0.01 240);
-  --sidebar-primary: oklch(0.55 0.18 255);
-  --sidebar-primary-foreground: oklch(0.98 0.005 255);
-  --sidebar-accent: oklch(0.20 0.03 255);
-  --sidebar-accent-foreground: oklch(0.92 0.01 240);
-  --sidebar-border: oklch(0.22 0.03 255);
-  --sidebar-ring: oklch(0.55 0.18 255);
+  --popover-foreground: oklch(0.12 0.01 240);
+
+  /* Primary: slate blue — not Ohio-flag blue, more neutral/professional */
+  --primary: oklch(0.38 0.12 250);
+  --primary-foreground: oklch(0.97 0.005 250);
+
+  --secondary: oklch(0.94 0.005 240);
+  --secondary-foreground: oklch(0.25 0.01 240);
+  --muted: oklch(0.94 0.004 240);
+  --muted-foreground: oklch(0.48 0.012 240);
+  --accent: oklch(0.92 0.008 250);
+  --accent-foreground: oklch(0.25 0.08 250);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.97 0 0);
+
+  /* Tight borders — visible but not heavy */
+  --border: oklch(0.87 0.006 240);
+  --input: oklch(0.87 0.006 240);
+  --ring: oklch(0.38 0.12 250);
+
+  /* Chart palette: sequential blue-to-red for data */
+  --chart-1: oklch(0.38 0.12 250);
+  --chart-2: oklch(0.52 0.14 220);
+  --chart-3: oklch(0.62 0.14 185);
+  --chart-4: oklch(0.62 0.16 145);
+  --chart-5: oklch(0.55 0.20 25);
+
+  /* Sidebar: very dark, near-black — not navy, not branded */
+  --sidebar: oklch(0.11 0.008 240);
+  --sidebar-foreground: oklch(0.82 0.008 240);
+  --sidebar-primary: oklch(0.52 0.14 250);
+  --sidebar-primary-foreground: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.18 0.01 240);
+  --sidebar-accent-foreground: oklch(0.88 0.008 240);
+  --sidebar-border: oklch(0.20 0.008 240);
+  --sidebar-ring: oklch(0.52 0.14 250);
 }
 
 @layer base {
@@ -96,17 +113,16 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
   [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
   a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
+  select:not(:disabled) {
     @apply cursor-pointer;
   }
 }
@@ -119,102 +135,150 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
-
-  .flex {
-    min-height: 0;
-    min-width: 0;
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
+  .flex { min-height: 0; min-width: 0; }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem;
-      padding-right: 2rem;
-      max-width: 1400px;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      max-width: 1440px;
     }
   }
 
-  /* Data value typography */
+  /* ── Data values: always monospace ── */
   .data-value {
     font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Trend colors: semantic only ── */
+  .trend-up   { color: oklch(0.48 0.16 145); }
+  .trend-down { color: oklch(0.52 0.20 25); }
+  .trend-neutral { color: oklch(0.48 0.012 240); }
+
+  /* ── Section panel: tight border, no shadow ── */
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* ── Stat row: horizontal key-value pair ── */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid oklch(0.93 0.004 240);
+    font-size: 12px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .label { color: var(--muted-foreground); }
+  .stat-row .val   { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; }
+
+  /* ── Table: tight, no card wrapper ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    text-align: left;
+    padding: 6px 10px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    background: oklch(0.97 0.002 240);
+  }
+  .data-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid oklch(0.93 0.004 240);
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: oklch(0.96 0.003 240); }
+  .data-table .mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  /* ── Source tag: small attribution label ── */
+  .source-tag {
+    font-size: 10px;
+    color: var(--muted-foreground);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.02em;
   }
 
-  /* Blueprint grid background */
-  .blueprint-bg {
-    background-color: oklch(0.985 0.002 240);
-    background-image:
-      linear-gradient(oklch(0.88 0.015 255 / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.88 0.015 255 / 0.3) 1px, transparent 1px);
-    background-size: 40px 40px;
+  /* ── Live badge ── */
+  .badge-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: oklch(0.92 0.08 145);
+    color: oklch(0.35 0.14 145);
+    letter-spacing: 0.04em;
+  }
+  .badge-cached {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: oklch(0.93 0.005 240);
+    color: oklch(0.45 0.01 240);
+    letter-spacing: 0.04em;
   }
 
-  /* Metric card */
-  .metric-card {
-    @apply bg-card rounded-lg border border-border p-5 shadow-sm;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  /* ── Section header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: oklch(0.97 0.002 240);
   }
-  .metric-card:hover {
-    @apply shadow-md;
-    transform: translateY(-1px);
-  }
-
-  /* Positive/negative indicators */
-  .trend-up {
-    color: oklch(0.52 0.17 145);
-  }
-  .trend-down {
-    color: oklch(0.58 0.22 25);
-  }
-  .trend-neutral {
-    color: oklch(0.52 0.018 240);
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--foreground);
   }
 
-  /* Sidebar nav item */
-  .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150;
-    color: oklch(0.72 0.02 240);
+  /* ── Ticker strip ── */
+  .ticker-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 14px;
+    border-right: 1px solid var(--border);
+    min-width: 120px;
   }
-  .nav-item:hover {
-    background-color: oklch(0.20 0.03 255);
-    color: oklch(0.92 0.01 240);
+  .ticker-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+    margin-bottom: 2px;
   }
-  .nav-item.active {
-    background-color: oklch(0.45 0.18 255);
-    color: oklch(0.98 0.005 255);
+  .ticker-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
   }
-
-  /* Chart container */
-  .chart-container {
-    @apply bg-card rounded-lg border border-border p-5 shadow-sm;
-  }
-
-  /* Badge variants */
-  .badge-hot {
-    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
-    background-color: oklch(0.95 0.08 25);
-    color: oklch(0.45 0.22 25);
-  }
-  .badge-warm {
-    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
-    background-color: oklch(0.96 0.08 75);
-    color: oklch(0.48 0.18 75);
-  }
-  .badge-cool {
-    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
-    background-color: oklch(0.94 0.015 255);
-    color: oklch(0.35 0.15 255);
-  }
-  .badge-cold {
-    @apply text-xs font-semibold px-2 py-0.5 rounded-full;
-    background-color: oklch(0.94 0.02 220);
-    color: oklch(0.35 0.12 220);
+  .ticker-change {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    margin-top: 1px;
   }
 }

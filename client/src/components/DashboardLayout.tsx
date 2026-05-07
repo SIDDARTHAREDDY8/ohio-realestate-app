@@ -1,213 +1,222 @@
-/* Ohio Blueprint Design System
-   DashboardLayout: Dark navy sidebar + white main canvas
-   Sidebar: 260px fixed, dark (#0F172A), Ohio state blue accents
-   Main: Scrollable content area with blueprint grid background
-*/
+/*
+ * DashboardLayout — Data Terminal style
+ * Narrow sidebar (220px), dense top ticker bar, no decorative chrome
+ * Every pixel earns its place
+ */
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  LayoutDashboard,
-  Map,
-  TrendingUp,
-  Brain,
-  BarChart3,
-  Info,
-  Menu,
-  X,
-  Building2,
-  ChevronRight,
-  RefreshCw,
+  LayoutDashboard, Map, TrendingUp, Brain, BarChart3, Info,
+  Menu, X, Database, Activity, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import pipelineMeta from "@/data/pipeline_meta.json";
+import { useLiveData } from "@/hooks/useLiveData";
 
 const NAV_ITEMS = [
-  { path: "/", label: "Overview", icon: LayoutDashboard, description: "Statewide KPIs & summary" },
-  { path: "/county-explorer", label: "County Explorer", icon: Map, description: "88-county deep dive" },
-  { path: "/market-trends", label: "Market Trends", icon: TrendingUp, description: "Redfin market data" },
-  { path: "/ml-insights", label: "ML Insights", icon: Brain, description: "Predictions & clusters" },
-  { path: "/economic-indicators", label: "Economic Data", icon: BarChart3, description: "FRED indicators" },
-  { path: "/about", label: "About & Data", icon: Info, description: "Sources & methodology" },
+  { path: "/",                    label: "Overview",     icon: LayoutDashboard },
+  { path: "/county-explorer",     label: "Counties",     icon: Map },
+  { path: "/market-trends",       label: "Market",       icon: TrendingUp },
+  { path: "/ml-insights",         label: "ML Models",    icon: Brain },
+  { path: "/economic-indicators", label: "Economics",    icon: BarChart3 },
+  { path: "/about",               label: "About",        icon: Info },
 ];
 
-const meta = pipelineMeta as {
-  last_refresh: string;
-  data_sources: string[];
-  counties_covered: number;
-  refresh_schedule: string;
-};
-
-function formatRefreshDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return iso.substring(0, 10);
-  }
+function fmt(v: number | null, pre = "", suf = "", dec = 2) {
+  if (v == null) return "—";
+  return `${pre}${v.toLocaleString("en-US", { maximumFractionDigits: dec })}${suf}`;
+}
+function fmtK(v: number | null) {
+  if (v == null) return "—";
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v}`;
 }
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
+interface TickerItemProps {
+  label: string;
+  value: string;
+  change?: number | null;
+  source: "live" | "cached";
+  date?: string | null;
+}
+function TickerItem({ label, value, change, source, date }: TickerItemProps) {
+  const isUp = change != null && change >= 0;
+  return (
+    <div className="ticker-item">
+      <div className="ticker-label">{label}</div>
+      <div className={cn("ticker-value", change != null ? (isUp ? "trend-up" : "trend-down") : "")}>
+        {value}
+      </div>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        {change != null && (
+          <span className={cn("ticker-change", isUp ? "trend-up" : "trend-down")}>
+            {isUp ? <ArrowUpRight className="w-2.5 h-2.5 inline" /> : <ArrowDownRight className="w-2.5 h-2.5 inline" />}
+            {Math.abs(change).toFixed(2)}
+          </span>
+        )}
+        <span className={source === "live" ? "badge-live" : "badge-cached"}>
+          {source === "live" ? "● LIVE" : "CACHED"}
+        </span>
+      </div>
+    </div>
+  );
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const live = useLiveData();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
+
+      {/* ── Sidebar ── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col transition-transform duration-300 ease-in-out",
-          "w-[260px]",
+          "fixed inset-y-0 left-0 z-50 flex flex-col transition-transform duration-200",
+          "w-[220px]",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
-        style={{ backgroundColor: "oklch(0.13 0.025 255)" }}
+        style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}
       >
-        {/* Logo / Brand */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: "oklch(0.22 0.03 255)" }}>
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "oklch(0.45 0.18 255)" }}
-          >
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-bold leading-tight" style={{ color: "oklch(0.95 0.01 240)", fontFamily: "'DM Sans', sans-serif" }}>
-              Ohio RE
+        {/* Brand — minimal, no logo */}
+        <div
+          className="flex items-center gap-2 px-4 py-3"
+          style={{ borderBottom: "1px solid var(--sidebar-border)" }}
+        >
+          <Database className="w-4 h-4 flex-shrink-0" style={{ color: "oklch(0.52 0.14 250)" }} />
+          <div>
+            <div className="text-xs font-bold tracking-tight" style={{ color: "oklch(0.88 0.008 240)", fontFamily: "'IBM Plex Mono', monospace" }}>
+              OH-RE-INTEL
             </div>
-            <div className="text-xs leading-tight" style={{ color: "oklch(0.55 0.02 240)" }}>
-              Market Intelligence
+            <div className="text-xs" style={{ color: "oklch(0.42 0.008 240)", fontSize: 10 }}>
+              v2.0 · 88 counties
             </div>
           </div>
-          <button
-            className="ml-auto lg:hidden p-1 rounded"
-            style={{ color: "oklch(0.55 0.02 240)" }}
-            onClick={() => setMobileOpen(false)}
-          >
-            <X className="w-4 h-4" />
+          <button className="ml-auto lg:hidden" onClick={() => setMobileOpen(false)}>
+            <X className="w-3.5 h-3.5" style={{ color: "oklch(0.42 0.008 240)" }} />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          <div className="text-xs font-semibold uppercase tracking-wider mb-3 px-3" style={{ color: "oklch(0.42 0.02 240)" }}>
-            Analytics
-          </div>
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-2">
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.path;
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 group",
-                  isActive ? "text-white" : "hover:text-white"
-                )}
+                className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors"
                 style={{
-                  backgroundColor: isActive ? "oklch(0.45 0.18 255)" : "transparent",
-                  color: isActive ? "white" : "oklch(0.65 0.02 240)",
+                  color: isActive ? "oklch(0.88 0.008 240)" : "oklch(0.52 0.008 240)",
+                  background: isActive ? "oklch(0.18 0.01 240)" : "transparent",
+                  borderLeft: isActive ? "2px solid oklch(0.52 0.14 250)" : "2px solid transparent",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = "oklch(0.20 0.03 255)";
-                    (e.currentTarget as HTMLElement).style.color = "oklch(0.92 0.01 240)";
-                  }
+                  if (!isActive) (e.currentTarget as HTMLElement).style.color = "oklch(0.75 0.008 240)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                    (e.currentTarget as HTMLElement).style.color = "oklch(0.65 0.02 240)";
-                  }
+                  if (!isActive) (e.currentTarget as HTMLElement).style.color = "oklch(0.52 0.008 240)";
                 }}
                 onClick={() => setMobileOpen(false)}
               >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
+                <item.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {/* Data sources + refresh footer */}
-        <div className="px-4 py-4 border-t space-y-3" style={{ borderColor: "oklch(0.22 0.03 255)" }}>
-          {/* Last refresh badge */}
-          <div
-            className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
-            style={{ backgroundColor: "oklch(0.18 0.03 255)" }}
-          >
-            <RefreshCw className="w-3 h-3 flex-shrink-0" style={{ color: "oklch(0.55 0.18 255)" }} />
-            <div className="min-w-0">
-              <div className="text-xs font-semibold" style={{ color: "oklch(0.55 0.18 255)" }}>
-                Auto-refresh
-              </div>
-              <div className="text-xs" style={{ color: "oklch(0.45 0.02 240)" }}>
-                {formatRefreshDate(meta.last_refresh)}
-              </div>
-            </div>
-          </div>
-
-          {/* Data sources */}
-          <div className="text-xs" style={{ color: "oklch(0.42 0.02 240)" }}>
-            <div className="font-semibold mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>Data Sources</div>
-            {meta.data_sources.map(src => (
-              <div key={src}>{src}</div>
-            ))}
+        {/* Data sources — plain text, no icons */}
+        <div
+          className="px-4 py-3 text-xs"
+          style={{ borderTop: "1px solid var(--sidebar-border)", color: "oklch(0.38 0.008 240)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}
+        >
+          <div style={{ color: "oklch(0.48 0.008 240)", marginBottom: 4, fontWeight: 600 }}>DATA SOURCES</div>
+          <div>US Census Bureau ACS</div>
+          <div>Redfin Market Tracker</div>
+          <div>FRED · St. Louis Fed</div>
+          <div style={{ marginTop: 6, color: "oklch(0.32 0.008 240)" }}>
+            {live.apiEnabled ? "● LIVE API" : "○ CACHED"} · {live.lastFetched ? new Date(live.lastFetched).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
           </div>
         </div>
       </aside>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col lg:ml-[260px] min-w-0 overflow-hidden">
-        {/* Top bar */}
-        <header
-          className="flex items-center gap-4 px-6 py-3 border-b bg-white flex-shrink-0"
-          style={{ borderColor: "oklch(0.90 0.008 240)" }}
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col lg:ml-[220px] min-w-0 overflow-hidden">
+
+        {/* Top ticker bar */}
+        <div
+          className="flex items-stretch overflow-x-auto flex-shrink-0"
+          style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}
         >
           <button
-            className="lg:hidden p-2 rounded-md hover:bg-muted transition-colors"
+            className="lg:hidden flex items-center px-3"
+            style={{ borderRight: "1px solid var(--border)" }}
             onClick={() => setMobileOpen(true)}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4" />
           </button>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-foreground">
-              {NAV_ITEMS.find((n) => n.path === location)?.label ?? "Ohio Real Estate Intelligence"}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {NAV_ITEMS.find((n) => n.path === location)?.description ?? "Market Intelligence Platform"}
+
+          {/* Page title */}
+          <div
+            className="flex items-center px-4"
+            style={{ borderRight: "1px solid var(--border)", minWidth: 160 }}
+          >
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-foreground">
+                {NAV_ITEMS.find(n => n.path === location)?.label ?? "Overview"}
+              </div>
+              <div className="source-tag">Ohio Real Estate Intelligence</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
-              style={{
-                backgroundColor: "oklch(0.94 0.015 255)",
-                color: "oklch(0.35 0.15 255)",
-              }}
-            >
-              <RefreshCw className="w-2.5 h-2.5" />
-              Monthly Auto-Refresh
-            </span>
-            <span className="text-xs text-muted-foreground hidden sm:block">
-              {meta.counties_covered} Ohio Counties
-            </span>
+
+          {/* Live tickers */}
+          <TickerItem
+            label="30-YR MORTGAGE"
+            value={fmt(live.mortgage_rate_30yr.value, "", "%")}
+            source={live.mortgage_rate_30yr.source}
+            date={live.mortgage_rate_30yr.date}
+          />
+          <TickerItem
+            label="OH LISTING PRICE"
+            value={fmtK(live.ohio_listing_price.value)}
+            source={live.ohio_listing_price.source}
+            date={live.ohio_listing_price.date}
+          />
+          <TickerItem
+            label="OH UNEMPLOYMENT"
+            value={fmt(live.ohio_unemployment.value, "", "%")}
+            source={live.ohio_unemployment.source}
+            date={live.ohio_unemployment.date}
+          />
+          <TickerItem
+            label="OH HPI"
+            value={fmt(live.ohio_hpi.value, "", "", 1)}
+            source={live.ohio_hpi.source}
+            date={live.ohio_hpi.date}
+          />
+          <TickerItem
+            label="FED FUNDS"
+            value={fmt(live.fed_funds_rate.value, "", "%")}
+            source={live.fed_funds_rate.source}
+            date={live.fed_funds_rate.date}
+          />
+
+          {/* Status indicator */}
+          <div className="ml-auto flex items-center px-4 gap-2 flex-shrink-0" style={{ borderLeft: "1px solid var(--border)" }}>
+            <Activity className="w-3 h-3" style={{ color: live.apiEnabled ? "oklch(0.52 0.16 145)" : "oklch(0.52 0.008 240)" }} />
+            <span className="source-tag">{live.apiEnabled ? "LIVE" : "STATIC"}</span>
           </div>
-        </header>
+        </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto blueprint-bg">
+        <main className="flex-1 overflow-y-auto" style={{ background: "var(--background)" }}>
           {children}
         </main>
       </div>
