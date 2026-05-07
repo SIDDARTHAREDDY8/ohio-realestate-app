@@ -182,7 +182,7 @@ export default function MarketTrends() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={52} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Avg Sale Price"]} />
                 <Area type="monotone" dataKey="avg_price" stroke={C1} fill="url(#priceG)" strokeWidth={1.5} dot={false} />
@@ -198,7 +198,7 @@ export default function MarketTrends() {
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={statewideTrend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={30} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)} days`, "Avg DOM"]} />
                 <ReferenceLine y={30} stroke={C4} strokeDasharray="3 3" strokeWidth={1} label={{ value: "30d", position: "right", fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", fill: C4 }} />
@@ -218,7 +218,7 @@ export default function MarketTrends() {
             <ResponsiveContainer width="100%" height={140}>
               <LineChart data={statewideTrend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v.toFixed(0)}%`} domain={["auto", "auto"]} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Sale/List"]} />
                 <ReferenceLine y={100} stroke={C4} strokeDasharray="3 3" strokeWidth={1} />
@@ -241,7 +241,7 @@ export default function MarketTrends() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Homes Sold"]} />
                 <Area type="monotone" dataKey="total_sold" stroke={C2} fill="url(#soldG)" strokeWidth={1.5} dot={false} />
@@ -286,7 +286,7 @@ export default function MarketTrends() {
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={comparisonData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-              <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+              <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
               <YAxis
                 tick={CHART_STYLE} tickLine={false} axisLine={false} width={55}
                 tickFormatter={(v) => metric.includes("price") || metric.includes("ppsf") ? `$${(v/1000).toFixed(0)}K` : String(v)}

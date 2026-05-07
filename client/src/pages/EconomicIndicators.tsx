@@ -168,7 +168,7 @@ export default function EconomicIndicators() {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={realHPIData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={7} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [Number(v).toFixed(1), n]} />
                 <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -186,7 +186,7 @@ export default function EconomicIndicators() {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={metroHPIData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={4} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [Number(v).toFixed(1), n]} />
                 <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -212,7 +212,7 @@ export default function EconomicIndicators() {
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={rateData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-              <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={8} />
+              <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
               <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} />
               <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [`${Number(v).toFixed(2)}%`, n]} />
               <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -239,7 +239,7 @@ export default function EconomicIndicators() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={52} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
                 <Area type="monotone" dataKey="value" stroke={C3} fill="url(#listG2)" strokeWidth={1.5} dot={false} />
@@ -260,7 +260,7 @@ export default function EconomicIndicators() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Active Listings"]} />
                 <Area type="monotone" dataKey="value" stroke={C2} fill="url(#invG2)" strokeWidth={1.5} dot={false} />
@@ -284,7 +284,7 @@ export default function EconomicIndicators() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Unemployment"]} />
                 <ReferenceLine y={4} stroke={C3} strokeDasharray="3 3" strokeWidth={1} />
@@ -307,7 +307,7 @@ export default function EconomicIndicators() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={50} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toLocaleString()}K`, "Employment"]} />
                 <Area type="monotone" dataKey="value" stroke={C6} fill="url(#empG2)" strokeWidth={1.5} dot={false} />
@@ -325,7 +325,7 @@ export default function EconomicIndicators() {
             <ResponsiveContainer width="100%" height={150}>
               <LineChart data={sentimentSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toFixed(1), "Sentiment"]} />
                 <Line type="monotone" dataKey="value" stroke={C5} strokeWidth={1.5} dot={false} />
@@ -346,7 +346,7 @@ export default function EconomicIndicators() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toFixed(1), "CPI"]} />
                 <Area type="monotone" dataKey="value" stroke={C5} fill="url(#cpiG2)" strokeWidth={1.5} dot={false} />

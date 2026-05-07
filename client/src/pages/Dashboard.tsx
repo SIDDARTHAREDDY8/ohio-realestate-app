@@ -130,7 +130,7 @@ export default function Dashboard() {
     <div className="p-4 space-y-4">
 
       {/* ── Top row: stat table + HPI chart ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
         {/* Stat table */}
         <div className="panel">
@@ -152,8 +152,8 @@ export default function Dashboard() {
         <div className="panel lg:col-span-2">
           <SectionHeader title="Ohio House Price Index — Actual + Prophet Forecast" source="FHFA via FRED · OHSTHPI" url="https://fred.stlouisfed.org/series/OHSTHPI" />
           <div className="p-3">
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={hpiData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={hpiData} margin={{ top: 4, right: 8, left: 0, bottom: 20 }}>
                 <defs>
                   <linearGradient id="hpiG" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={C1} stopOpacity={0.15} />
@@ -165,7 +165,7 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={7} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
                 <Tooltip
                   contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2, border: "1px solid var(--border)" }}
@@ -190,7 +190,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={140}>
               <LineChart data={mortgageData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={8} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Rate"]} />
                 <ReferenceLine y={7} stroke={C4} strokeDasharray="3 3" strokeWidth={1} />
@@ -213,7 +213,7 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={48} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
                 <Area type="monotone" dataKey="price" stroke={C3} fill="url(#listG)" strokeWidth={1.5} dot={false} />
@@ -235,7 +235,7 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
-                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Active Listings"]} />
                 <Area type="monotone" dataKey="count" stroke={C2} fill="url(#invG)" strokeWidth={1.5} dot={false} />
