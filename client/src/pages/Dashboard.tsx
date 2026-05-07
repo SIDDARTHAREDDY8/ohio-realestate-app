@@ -130,7 +130,7 @@ export default function Dashboard() {
     <div className="p-4 space-y-4">
 
       {/* ── Top row: stat table + HPI chart ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ alignItems: 'stretch' }}>
 
         {/* Stat table */}
         <div className="panel">
@@ -148,12 +148,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* HPI + forecast */}
-        <div className="panel lg:col-span-2">
+        {/* HPI + forecast — stretches to match stat table height */}
+        <div className="panel lg:col-span-2 flex flex-col">
           <SectionHeader title="Ohio House Price Index — Actual + Prophet Forecast" source="FHFA via FRED · OHSTHPI" url="https://fred.stlouisfed.org/series/OHSTHPI" />
-          <div className="p-3">
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={hpiData} margin={{ top: 4, right: 8, left: 0, bottom: 20 }}>
+          <div className="p-3 pb-6 flex-1 flex flex-col">
+            <ResponsiveContainer width="100%" className="flex-1" height="100%" minHeight={220}>
+              <AreaChart data={hpiData} margin={{ top: 4, right: 8, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="hpiG" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={C1} stopOpacity={0.15} />
@@ -175,9 +175,9 @@ export default function Dashboard() {
                 <Area type="monotone" dataKey="forecast" stroke={C5} fill="url(#fcstG)" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="HPI (forecast)" connectNulls={false} />
               </AreaChart>
             </ResponsiveContainer>
-            <div className="source-tag mt-1">
-              Forecast: Facebook Prophet with mortgage rate, unemployment, and fed funds rate as regressors · 8-quarter horizon · 95% CI
-            </div>
+          </div>
+          <div className="px-3 pb-3 source-tag">
+            Forecast: Facebook Prophet with mortgage rate, unemployment, and fed funds rate as regressors · 8-quarter horizon · 95% CI
           </div>
         </div>
       </div>
