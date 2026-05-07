@@ -81,36 +81,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {NAV_ITEMS.map((item) => {
             const isActive = location === item.path;
             return (
-              <Link key={item.path} href={item.path}>
-                <a
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 group",
-                    isActive
-                      ? "text-white"
-                      : "hover:text-white"
-                  )}
-                  style={{
-                    backgroundColor: isActive ? "oklch(0.45 0.18 255)" : "transparent",
-                    color: isActive ? "white" : "oklch(0.65 0.02 240)",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = "oklch(0.20 0.03 255)";
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.92 0.01 240)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                      (e.currentTarget as HTMLElement).style.color = "oklch(0.65 0.02 240)";
-                    }
-                  }}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <item.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1">{item.label}</span>
-                  {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
-                </a>
+              <Link
+                key={item.path}
+                href={item.path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 group",
+                  isActive ? "text-white" : "hover:text-white"
+                )}
+                style={{
+                  backgroundColor: isActive ? "oklch(0.45 0.18 255)" : "transparent",
+                  color: isActive ? "white" : "oklch(0.65 0.02 240)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "oklch(0.20 0.03 255)";
+                    (e.currentTarget as HTMLElement).style.color = "oklch(0.92 0.01 240)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                    (e.currentTarget as HTMLElement).style.color = "oklch(0.65 0.02 240)";
+                  }
+                }}
+                onClick={() => setMobileOpen(false)}
+              >
+                <item.icon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
               </Link>
             );
           })}
