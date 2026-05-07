@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react";
-import { useLiveData } from "@/hooks/useLiveData";
+import { useLiveData, type LiveMetric } from "@/hooks/useLiveData";
 import kpisData from "@/data/kpis.json";
 import countySummary from "@/data/county_summary.json";
 import economicData from "@/data/economic_indicators.json";
@@ -118,11 +118,11 @@ export default function Dashboard() {
     { label: "Avg. Vacancy Rate", val: fmt(sw.avg_vacancy_rate, "", "%", 1), note: "2023 ACS 5-yr" },
     { label: "Total Population", val: fmt(sw.total_population ? sw.total_population / 1_000_000 : null, "", "M", 2), note: "2023 ACS 5-yr" },
     { label: "5-Yr Home Value Appreciation", val: fmt(sw.avg_5yr_appreciation_pct, "", "%", 1), note: "2019→2023" },
-    { label: "Median Listing Price", val: fmtK(live.ohio_listing_price.value), note: live.ohio_listing_price.source === "live" ? `FRED · ${live.ohio_listing_price.date}` : "FRED · cached" },
-    { label: "30-Yr Mortgage Rate", val: fmt(live.mortgage_rate_30yr.value, "", "%", 2), note: live.mortgage_rate_30yr.source === "live" ? `FRED · ${live.mortgage_rate_30yr.date}` : "FRED · cached" },
-    { label: "Ohio Unemployment Rate", val: fmt(live.ohio_unemployment.value, "", "%", 1), note: live.ohio_unemployment.source === "live" ? `BLS via FRED · ${live.ohio_unemployment.date}` : "BLS via FRED · cached" },
-    { label: "Ohio HPI (FHFA)", val: fmt(live.ohio_hpi.value, "", "", 1), note: live.ohio_hpi.source === "live" ? `FHFA via FRED · ${live.ohio_hpi.date}` : "FHFA via FRED · cached" },
-    { label: "Federal Funds Rate", val: fmt(live.fed_funds_rate.value, "", "%", 2), note: live.fed_funds_rate.source === "live" ? `FRED · ${live.fed_funds_rate.date}` : "FRED · cached" },
+    { label: "Median Listing Price", val: fmtK(live.ohio_listing_price.value), note: `${live.ohio_listing_price.source} · ${live.ohio_listing_price.date ?? "—"}` },
+    { label: "30-Yr Mortgage Rate", val: fmt(live.mortgage_rate_30yr.value, "", "%", 2), note: `${live.mortgage_rate_30yr.source} · ${live.mortgage_rate_30yr.date ?? "—"}` },
+    { label: "Ohio Unemployment Rate", val: fmt(live.ohio_unemployment.value, "", "%", 1), note: `${live.ohio_unemployment.source} · ${live.ohio_unemployment.date ?? "—"}${live.ohio_unemployment.isLive ? " ●" : ""}` },
+    { label: "Ohio HPI (FHFA)", val: fmt(live.ohio_hpi.value, "", "", 1), note: `${live.ohio_hpi.source} · ${live.ohio_hpi.date ?? "—"}` },
+    { label: "Federal Funds Rate", val: fmt(live.fed_funds_rate.value, "", "%", 2), note: `${live.fed_funds_rate.source} · ${live.fed_funds_rate.date ?? "—"}` },
     { label: "Counties Analyzed", val: "88", note: "All Ohio counties" },
   ];
 

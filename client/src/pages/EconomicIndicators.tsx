@@ -1,59 +1,74 @@
-/* Ohio Blueprint — Economic Indicators
-   FRED data: HPI, mortgage rates, unemployment, employment, CPI, consumer sentiment
-*/
+/*
+ * Economic Indicators — Data Terminal style
+ * FRED time series: HPI, mortgage rates, employment, CPI, sentiment
+ * Dense charts, source citations, no decorative chrome
+ */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   LineChart, Line, AreaChart, Area, ComposedChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  ReferenceLine,
 } from "recharts";
+import { ExternalLink } from "lucide-react";
 import economic from "@/data/economic_indicators.json";
 
 const econData = economic as any[];
 
-const BLUE = "oklch(0.45 0.18 255)";
-const GREEN = "oklch(0.52 0.17 145)";
-const AMBER = "oklch(0.72 0.18 75)";
-const RED = "oklch(0.58 0.22 25)";
-const CYAN = "oklch(0.58 0.16 220)";
+const C1 = "oklch(0.38 0.12 250)";
+const C2 = "oklch(0.52 0.14 220)";
+const C3 = "oklch(0.48 0.16 145)";
+const C4 = "oklch(0.55 0.20 25)";
+const C5 = "oklch(0.62 0.18 75)";
+const C6 = "oklch(0.58 0.14 185)";
+
+const CHART_STYLE = { fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" };
 
 function getSeries(name: string, from = "2015-01-01") {
   return econData
     .filter(d => d.friendly_name === name && d.date >= from)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => ({ date: d.date?.substring(0, 7), value: d.value }));
+    .map(d => ({ date: d.date?.substring(0, 7), value: d.value }))
+    .filter((d, i, a) => i === a.findIndex(x => x.date === d.date));
 }
 
-function dedup(arr: any[]) {
-  const seen = new Set<string>();
-  return arr.filter(d => {
-    if (seen.has(d.date)) return false;
-    seen.add(d.date);
-    return true;
-  });
+function SectionHeader({ title, source, url, note }: { title: string; source: string; url?: string; note?: string }) {
+  return (
+    <div className="section-header">
+      <span className="section-title">{title}</span>
+      <div className="flex items-center gap-3">
+        {note && <span className="source-tag">{note}</span>}
+        <span className="source-tag flex items-center gap-0.5">
+          {url ? (
+            <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:underline">
+              {source} <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          ) : source}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function EconomicIndicators() {
-  const [corrMetric, setCorrMetric] = useState("ohio_unemployment_rate");
-
-  const hpiSeries = useMemo(() => dedup(getSeries("ohio_hpi_all_transactions")), []);
-  const mortgageSeries = useMemo(() => dedup(getSeries("mortgage_rate_30yr_fixed")), []);
-  const fedFundsSeries = useMemo(() => dedup(getSeries("federal_funds_rate")), []);
-  const unemploySeries = useMemo(() => dedup(getSeries("ohio_unemployment_rate")), []);
-  const employmentSeries = useMemo(() => dedup(getSeries("ohio_nonfarm_employment")), []);
-  const cpiSeries = useMemo(() => dedup(getSeries("cpi_all_urban")), []);
-  const sentimentSeries = useMemo(() => dedup(getSeries("consumer_sentiment_umich")), []);
-  const listingPriceSeries = useMemo(() => dedup(getSeries("ohio_median_listing_price")), []);
-  const inventorySeries = useMemo(() => dedup(getSeries("ohio_active_listing_count")), []);
+  const hpiSeries = useMemo(() => getSeries("ohio_hpi_all_transactions"), []);
+  const mortgageSeries = useMemo(() => getSeries("mortgage_rate_30yr_fixed"), []);
+  const fedFundsSeries = useMemo(() => getSeries("federal_funds_rate"), []);
+  const unemploySeries = useMemo(() => getSeries("ohio_unemployment_rate"), []);
+  const employmentSeries = useMemo(() => getSeries("ohio_nonfarm_employment"), []);
+  const cpiSeries = useMemo(() => getSeries("cpi_all_urban"), []);
+  const sentimentSeries = useMemo(() => getSeries("consumer_sentiment_umich"), []);
+  const listingPriceSeries = useMemo(() => getSeries("ohio_median_listing_price"), []);
+  const inventorySeries = useMemo(() => getSeries("ohio_active_listing_count"), []);
 
   // Metro HPI comparison
   const metroHPIData = useMemo(() => {
     const metros = [
-      { key: "cleveland_hpi_fhfa", label: "Cleveland", color: BLUE },
-      { key: "columbus_hpi_fhfa", label: "Columbus", color: GREEN },
-      { key: "cincinnati_hpi_fhfa", label: "Cincinnati", color: AMBER },
-      { key: "akron_hpi_fhfa", label: "Akron", color: CYAN },
-      { key: "toledo_hpi_fhfa", label: "Toledo", color: RED },
+      { key: "cleveland_hpi_fhfa", label: "Cleveland", color: C1 },
+      { key: "columbus_hpi_fhfa", label: "Columbus", color: C3 },
+      { key: "cincinnati_hpi_fhfa", label: "Cincinnati", color: C5 },
+      { key: "akron_hpi_fhfa", label: "Akron", color: C2 },
+      { key: "toledo_hpi_fhfa", label: "Toledo", color: C4 },
     ];
     const byDate: Record<string, any> = {};
     metros.forEach(({ key, label }) => {
@@ -67,7 +82,7 @@ export default function EconomicIndicators() {
     return Object.values(byDate).sort((a: any, b: any) => a.date.localeCompare(b.date));
   }, []);
 
-  // Mortgage + Fed Funds combined
+  // Rate comparison
   const rateData = useMemo(() => {
     const mortMap: Record<string, number> = {};
     const fedMap: Record<string, number> = {};
@@ -81,210 +96,266 @@ export default function EconomicIndicators() {
     }));
   }, [mortgageSeries, fedFundsSeries]);
 
-  // Correlation: HPI vs selected metric
-  const corrData = useMemo(() => {
-    const hpiMap: Record<string, number> = {};
-    hpiSeries.forEach(d => { hpiMap[d.date] = d.value; });
-    const metricSeries = dedup(getSeries(corrMetric));
-    return metricSeries
-      .map(d => ({ x: d.value, y: hpiMap[d.date] ?? null, date: d.date }))
-      .filter(d => d.y != null);
-  }, [corrMetric, hpiSeries]);
+  // Real HPI (inflation-adjusted)
+  const realHPIData = useMemo(() => {
+    const cpiMap: Record<string, number> = {};
+    cpiSeries.forEach(d => { cpiMap[d.date] = d.value; });
+    const baseCPI = cpiSeries[0]?.value ?? 100;
+    return hpiSeries.map(d => ({
+      date: d.date,
+      nominal: d.value,
+      real: cpiMap[d.date] ? (d.value / cpiMap[d.date]) * baseCPI : null,
+    }));
+  }, [hpiSeries, cpiSeries]);
 
-  const CORR_OPTIONS = [
-    { key: "ohio_unemployment_rate", label: "Unemployment Rate" },
-    { key: "mortgage_rate_30yr_fixed", label: "30-Yr Mortgage Rate" },
-    { key: "federal_funds_rate", label: "Federal Funds Rate" },
-    { key: "consumer_sentiment_umich", label: "Consumer Sentiment" },
-    { key: "cpi_all_urban", label: "CPI (Inflation)" },
+  // Series metadata table
+  const SERIES_META = [
+    { id: "OHSTHPI", name: "Ohio HPI", type: "Quarterly", source: "FHFA", n: hpiSeries.length, latest: hpiSeries[hpiSeries.length-1]?.value?.toFixed(1) },
+    { id: "MEDLISPRIOH", name: "OH Listing Price", type: "Monthly", source: "Realtor.com", n: listingPriceSeries.length, latest: `$${(listingPriceSeries[listingPriceSeries.length-1]?.value/1000)?.toFixed(0)}K` },
+    { id: "ACTLISCOUOH", name: "OH Active Listings", type: "Monthly", source: "Realtor.com", n: inventorySeries.length, latest: inventorySeries[inventorySeries.length-1]?.value?.toLocaleString() },
+    { id: "MORTGAGE30US", name: "30-Yr Mortgage Rate", type: "Weekly", source: "Freddie Mac", n: mortgageSeries.length, latest: `${mortgageSeries[mortgageSeries.length-1]?.value?.toFixed(2)}%` },
+    { id: "FEDFUNDS", name: "Federal Funds Rate", type: "Monthly", source: "Federal Reserve", n: fedFundsSeries.length, latest: `${fedFundsSeries[fedFundsSeries.length-1]?.value?.toFixed(2)}%` },
+    { id: "OHUR", name: "OH Unemployment", type: "Monthly", source: "BLS", n: unemploySeries.length, latest: `${unemploySeries[unemploySeries.length-1]?.value?.toFixed(1)}%` },
+    { id: "OHNA", name: "OH Nonfarm Employment", type: "Monthly", source: "BLS", n: employmentSeries.length, latest: `${employmentSeries[employmentSeries.length-1]?.value?.toLocaleString()}K` },
+    { id: "CPIAUCSL", name: "CPI All Urban", type: "Monthly", source: "BLS", n: cpiSeries.length, latest: cpiSeries[cpiSeries.length-1]?.value?.toFixed(1) },
+    { id: "UMCSENT", name: "Consumer Sentiment", type: "Monthly", source: "U of Michigan", n: sentimentSeries.length, latest: sentimentSeries[sentimentSeries.length-1]?.value?.toFixed(1) },
   ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="chart-container">
-        <div className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: BLUE }}>FRED / St. Louis Fed</div>
-        <h2 className="text-xl font-bold text-foreground">Economic Indicators</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          21 economic time series from the Federal Reserve Bank of St. Louis — Ohio housing, mortgage rates, employment, and macroeconomic indicators.
-        </p>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {[
-            { label: "Series", val: "21" },
-            { label: "Observations", val: "2,934" },
-            { label: "Date Range", val: "2015–2026" },
-            { label: "Frequency", val: "Monthly/Quarterly" },
-          ].map(b => (
-            <div key={b.label} className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: "oklch(0.94 0.015 255)", color: "oklch(0.35 0.15 255)" }}>
-              <strong>{b.val}</strong> {b.label}
-            </div>
-          ))}
+    <div className="p-4 space-y-4">
+
+      {/* Series inventory table */}
+      <div className="panel">
+        <SectionHeader title="FRED Economic Series Inventory" source="FRED · St. Louis Fed" url="https://fred.stlouisfed.org/" note="21 series · 2,934 observations · 2015–2026" />
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Series ID</th>
+                <th>Description</th>
+                <th>Frequency</th>
+                <th>Source</th>
+                <th>Observations</th>
+                <th>Latest Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SERIES_META.map(s => (
+                <tr key={s.id}>
+                  <td>
+                    <a href={`https://fred.stlouisfed.org/series/${s.id}`} target="_blank" rel="noopener noreferrer"
+                      className="source-tag hover:underline flex items-center gap-0.5">
+                      {s.id} <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </td>
+                  <td style={{ fontWeight: 500, fontSize: 12 }}>{s.name}</td>
+                  <td className="source-tag">{s.type}</td>
+                  <td className="source-tag">{s.source}</td>
+                  <td className="mono">{s.n}</td>
+                  <td className="mono font-semibold">{s.latest ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Ohio HPI + Listing Price */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Ohio House Price Index (FHFA)</h3>
-          <p className="text-xs text-muted-foreground mb-4">All-Transactions HPI, Index 1980 Q1=100</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={hpiSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="hpiG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={BLUE} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={BLUE} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={5} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={45} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [Number(v).toFixed(1), "HPI"]} />
-              <Area type="monotone" dataKey="value" stroke={BLUE} fill="url(#hpiG)" strokeWidth={2} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* HPI nominal vs real */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="Ohio HPI — Nominal vs. Real (CPI-Adjusted)" source="FHFA via FRED · OHSTHPI" url="https://fred.stlouisfed.org/series/OHSTHPI" note="Index 1980 Q1=100" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={realHPIData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={7} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [Number(v).toFixed(1), n]} />
+                <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+                <Line type="monotone" dataKey="nominal" stroke={C1} strokeWidth={1.5} dot={false} name="Nominal HPI" />
+                <Line type="monotone" dataKey="real" stroke={C3} strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="Real HPI (CPI-adj)" connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="source-tag mt-1">Real HPI = Nominal HPI / CPI × base CPI. Divergence shows inflation-driven vs. fundamental price growth.</div>
+          </div>
         </div>
 
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Ohio Median Listing Price</h3>
-          <p className="text-xs text-muted-foreground mb-4">Realtor.com data via FRED, monthly</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={listingPriceSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="listG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={GREEN} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={GREEN} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={55} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
-              <Area type="monotone" dataKey="value" stroke={GREEN} fill="url(#listG)" strokeWidth={2} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="panel">
+          <SectionHeader title="Metro Area HPI Comparison (FHFA)" source="FHFA via FRED" url="https://fred.stlouisfed.org/" note="Quarterly · 5 Ohio metros" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={metroHPIData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={4} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [Number(v).toFixed(1), n]} />
+                <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+                {[
+                  { key: "Columbus", color: C3 },
+                  { key: "Cincinnati", color: C5 },
+                  { key: "Cleveland", color: C1 },
+                  { key: "Akron", color: C2 },
+                  { key: "Toledo", color: C4 },
+                ].map(m => (
+                  <Line key={m.key} type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={1.5} dot={false} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Interest rates */}
-      <div className="chart-container">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Interest Rates: 30-Yr Mortgage vs. Federal Funds Rate</h3>
-        <p className="text-xs text-muted-foreground mb-4">The Fed's rate hike cycle (2022–2023) drove mortgage rates to 20-year highs</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={rateData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={8} />
-            <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v}%`} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any, name: string) => [`${Number(v).toFixed(2)}%`, name]} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="mortgage_30yr" stroke={RED} strokeWidth={2} dot={false} name="30-Yr Mortgage" connectNulls />
-            <Line type="monotone" dataKey="fed_funds" stroke={AMBER} strokeWidth={2} dot={false} name="Fed Funds Rate" connectNulls />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Metro HPI comparison */}
-      <div className="chart-container">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Metro Area HPI Comparison (FHFA)</h3>
-        <p className="text-xs text-muted-foreground mb-4">Cleveland, Columbus, Cincinnati, Akron, Toledo — quarterly HPI</p>
-        <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={metroHPIData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={4} />
-            <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={45} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any, name: string) => [Number(v).toFixed(1), name]} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            {[
-              { key: "Cleveland", color: BLUE },
-              { key: "Columbus", color: GREEN },
-              { key: "Cincinnati", color: AMBER },
-              { key: "Akron", color: CYAN },
-              { key: "Toledo", color: RED },
-            ].map(m => (
-              <Line key={m.key} type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={2} dot={false} connectNulls />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Ohio employment + unemployment */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Ohio Unemployment Rate</h3>
-          <p className="text-xs text-muted-foreground mb-4">BLS monthly, seasonally adjusted</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={unemploySeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="unempG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={RED} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={RED} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Unemployment"]} />
-              <Area type="monotone" dataKey="value" stroke={RED} fill="url(#unempG)" strokeWidth={2} dot={false} />
-            </AreaChart>
+      <div className="panel">
+        <SectionHeader title="Interest Rates: 30-Yr Mortgage vs. Federal Funds Rate" source="Freddie Mac + Federal Reserve via FRED" url="https://fred.stlouisfed.org/" note="The 2022–2023 rate hike cycle drove mortgage rates to 20-year highs" />
+        <div className="p-3">
+          <ResponsiveContainer width="100%" height={180}>
+            <ComposedChart data={rateData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+              <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={8} />
+              <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} />
+              <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any, n: string) => [`${Number(v).toFixed(2)}%`, n]} />
+              <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+              <ReferenceLine y={7} stroke={C4} strokeDasharray="3 3" strokeWidth={1} />
+              <Line type="monotone" dataKey="mortgage_30yr" stroke={C4} strokeWidth={1.5} dot={false} name="30-Yr Mortgage" connectNulls />
+              <Line type="monotone" dataKey="fed_funds" stroke={C5} strokeWidth={1.5} dot={false} name="Fed Funds Rate" connectNulls />
+            </ComposedChart>
           </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Ohio Nonfarm Employment</h3>
-          <p className="text-xs text-muted-foreground mb-4">BLS monthly, thousands of persons</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={employmentSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="empG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CYAN} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={CYAN} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={50} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [`${Number(v).toLocaleString()}K`, "Employment"]} />
-              <Area type="monotone" dataKey="value" stroke={CYAN} fill="url(#empG)" strokeWidth={2} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="source-tag mt-1">Reference line: 7% threshold. Mortgage rate spread over fed funds rate reflects credit risk premium.</div>
         </div>
       </div>
 
-      {/* Consumer sentiment */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">University of Michigan Consumer Sentiment</h3>
-          <p className="text-xs text-muted-foreground mb-4">Leading indicator for housing demand</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={sentimentSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={35} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [Number(v).toFixed(1), "Sentiment Index"]} />
-              <Line type="monotone" dataKey="value" stroke={AMBER} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* Ohio listing price + inventory */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="Ohio Median Listing Price" source="Realtor.com via FRED · MEDLISPRIOH" url="https://fred.stlouisfed.org/series/MEDLISPRIOH" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={listingPriceSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="listG2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C3} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={C3} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={52} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
+                <Area type="monotone" dataKey="value" stroke={C3} fill="url(#listG2)" strokeWidth={1.5} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">CPI — All Urban Consumers</h3>
-          <p className="text-xs text-muted-foreground mb-4">Inflation context for real home price analysis</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={cpiSeries} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="cpiG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={AMBER} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={AMBER} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={6} />
-              <YAxis tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} tickLine={false} axisLine={false} width={40} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [Number(v).toFixed(1), "CPI"]} />
-              <Area type="monotone" dataKey="value" stroke={AMBER} fill="url(#cpiG)" strokeWidth={2} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="panel">
+          <SectionHeader title="Ohio Active Listing Count" source="Realtor.com via FRED · ACTLISCOUOH" url="https://fred.stlouisfed.org/series/ACTLISCOUOH" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={inventorySeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="invG2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C2} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={C2} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Active Listings"]} />
+                <Area type="monotone" dataKey="value" stroke={C2} fill="url(#invG2)" strokeWidth={1.5} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
+
+      {/* Employment + unemployment */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="Ohio Unemployment Rate" source="BLS via FRED · OHUR" url="https://fred.stlouisfed.org/series/OHUR" note="Monthly · seasonally adjusted" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={unemploySeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="unempG2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C4} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={C4} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Unemployment"]} />
+                <ReferenceLine y={4} stroke={C3} strokeDasharray="3 3" strokeWidth={1} />
+                <Area type="monotone" dataKey="value" stroke={C4} fill="url(#unempG2)" strokeWidth={1.5} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="source-tag mt-1">COVID-19 spike (Apr 2020: ~17%) visible. Reference: 4% full-employment threshold.</div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <SectionHeader title="Ohio Nonfarm Employment" source="BLS via FRED · OHNA" url="https://fred.stlouisfed.org/series/OHNA" note="Monthly · thousands of persons" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={employmentSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="empG2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C6} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={C6} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={50} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toLocaleString()}K`, "Employment"]} />
+                <Area type="monotone" dataKey="value" stroke={C6} fill="url(#empG2)" strokeWidth={1.5} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Consumer sentiment + CPI */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="Consumer Sentiment Index" source="U of Michigan via FRED · UMCSENT" url="https://fred.stlouisfed.org/series/UMCSENT" note="Leading indicator for housing demand" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <LineChart data={sentimentSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toFixed(1), "Sentiment"]} />
+                <Line type="monotone" dataKey="value" stroke={C5} strokeWidth={1.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="panel">
+          <SectionHeader title="CPI — All Urban Consumers" source="BLS via FRED · CPIAUCSL" url="https://fred.stlouisfed.org/series/CPIAUCSL" note="Used to compute real HPI above" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={150}>
+              <AreaChart data={cpiSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="cpiG2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C5} stopOpacity={0.15} />
+                    <stop offset="95%" stopColor={C5} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} interval={6} />
+                <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toFixed(1), "CPI"]} />
+                <Area type="monotone" dataKey="value" stroke={C5} fill="url(#cpiG2)" strokeWidth={1.5} dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

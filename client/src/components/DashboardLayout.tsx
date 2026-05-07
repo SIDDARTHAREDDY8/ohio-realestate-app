@@ -1,25 +1,25 @@
 /*
  * DashboardLayout — Data Terminal style
- * Narrow sidebar (220px), dense top ticker bar, no decorative chrome
- * Every pixel earns its place
+ * Narrow sidebar, top ticker bar with live metrics from Census ACS + BLS
+ * No CACHED labels — every metric shows source + date instead
  */
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Map, TrendingUp, Brain, BarChart3, Info,
-  Menu, X, Database, ArrowUpRight, ArrowDownRight,
+  Menu, X, Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLiveData } from "@/hooks/useLiveData";
+import { useLiveData, type LiveMetric } from "@/hooks/useLiveData";
 
 const NAV_ITEMS = [
-  { path: "/",                    label: "Overview",     icon: LayoutDashboard },
-  { path: "/county-explorer",     label: "Counties",     icon: Map },
-  { path: "/market-trends",       label: "Market",       icon: TrendingUp },
-  { path: "/ml-insights",         label: "ML Models",    icon: Brain },
-  { path: "/economic-indicators", label: "Economics",    icon: BarChart3 },
-  { path: "/about",               label: "About",        icon: Info },
+  { path: "/",                    label: "Overview",   icon: LayoutDashboard },
+  { path: "/county-explorer",     label: "Counties",   icon: Map },
+  { path: "/market-trends",       label: "Market",     icon: TrendingUp },
+  { path: "/ml-insights",         label: "ML Models",  icon: Brain },
+  { path: "/economic-indicators", label: "Economics",  icon: BarChart3 },
+  { path: "/about",               label: "About",      icon: Info },
 ];
 
 function fmt(v: number | null, pre = "", suf = "", dec = 2) {
@@ -36,27 +36,27 @@ function fmtK(v: number | null) {
 interface TickerItemProps {
   label: string;
   value: string;
-  change?: number | null;
-  source: "live" | "cached";
-  date?: string | null;
+  metric: LiveMetric;
 }
-function TickerItem({ label, value, change, source, date }: TickerItemProps) {
-  const isUp = change != null && change >= 0;
+
+function TickerItem({ label, value, metric }: TickerItemProps) {
   return (
     <div className="ticker-item">
       <div className="ticker-label">{label}</div>
-      <div className={cn("ticker-value", change != null ? (isUp ? "trend-up" : "trend-down") : "")}>
-        {value}
-      </div>
-      <div className="flex items-center gap-1.5 mt-0.5">
-        {change != null && (
-          <span className={cn("ticker-change", isUp ? "trend-up" : "trend-down")}>
-            {isUp ? <ArrowUpRight className="w-2.5 h-2.5 inline" /> : <ArrowDownRight className="w-2.5 h-2.5 inline" />}
-            {Math.abs(change).toFixed(2)}
-          </span>
+      <div className="ticker-value">{value}</div>
+      <div className="flex items-center gap-1 mt-0.5">
+        {metric.isLive && (
+          <span style={{
+            display: "inline-block",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "oklch(0.52 0.16 145)",
+            flexShrink: 0,
+          }} />
         )}
-        <span className={source === "live" ? "badge-live" : "badge-cached"}>
-          {source === "live" ? "● LIVE" : "CACHED"}
+        <span className="source-tag" style={{ fontSize: 9 }}>
+          {metric.source} · {metric.date ?? "—"}
         </span>
       </div>
     </div>
@@ -67,6 +67,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const live = useLiveData();
+
+  const pipelineDate = live.lastPipelineRun
+    ? new Date(live.lastPipelineRun).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "—";
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
@@ -80,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
         style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}
       >
-        {/* Brand — minimal, no logo */}
+        {/* Brand */}
         <div
           className="flex items-center gap-2 px-4 py-3"
           style={{ borderBottom: "1px solid var(--sidebar-border)" }}
@@ -90,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="text-xs font-bold tracking-tight" style={{ color: "oklch(0.88 0.008 240)", fontFamily: "'IBM Plex Mono', monospace" }}>
               OH-RE-INTEL
             </div>
-            <div className="text-xs" style={{ color: "oklch(0.42 0.008 240)", fontSize: 10 }}>
+            <div style={{ color: "oklch(0.42 0.008 240)", fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
               v2.0 · 88 counties
             </div>
           </div>
@@ -128,17 +132,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* Data sources — plain text, no icons */}
+        {/* Footer */}
         <div
-          className="px-4 py-3 text-xs"
-          style={{ borderTop: "1px solid var(--sidebar-border)", color: "oklch(0.38 0.008 240)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}
+          className="px-4 py-3"
+          style={{ borderTop: "1px solid var(--sidebar-border)", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}
         >
           <div style={{ color: "oklch(0.48 0.008 240)", marginBottom: 4, fontWeight: 600 }}>DATA SOURCES</div>
-          <div>US Census Bureau ACS</div>
-          <div>Redfin Market Tracker</div>
-          <div>FRED · St. Louis Fed</div>
+          <div style={{ color: "oklch(0.38 0.008 240)" }}>US Census Bureau ACS</div>
+          <div style={{ color: "oklch(0.38 0.008 240)" }}>Redfin Market Tracker</div>
+          <div style={{ color: "oklch(0.38 0.008 240)" }}>FRED · St. Louis Fed</div>
+          <div style={{ color: "oklch(0.38 0.008 240)" }}>BLS · Bureau of Labor Stats</div>
           <div style={{ marginTop: 6, color: "oklch(0.32 0.008 240)" }}>
-            {live.apiEnabled ? "● LIVE API" : "○ CACHED"} · {live.lastFetched ? new Date(live.lastFetched).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+            Pipeline: {pipelineDate}
           </div>
         </div>
       </aside>
@@ -165,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Page title */}
           <div
-            className="flex items-center px-4"
+            className="flex items-center px-4 flex-shrink-0"
             style={{ borderRight: "1px solid var(--border)", minWidth: 160 }}
           >
             <div>
@@ -178,42 +183,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Live tickers */}
           <TickerItem
+            label="OH UNEMPLOYMENT"
+            value={fmt(live.ohio_unemployment.value, "", "%", 1)}
+            metric={live.ohio_unemployment}
+          />
+          <TickerItem
+            label="OH HOME VALUE"
+            value={fmtK(live.ohio_median_home_value.value)}
+            metric={live.ohio_median_home_value}
+          />
+          <TickerItem
+            label="OH MEDIAN RENT"
+            value={fmtK(live.ohio_median_rent.value) + "/mo"}
+            metric={live.ohio_median_rent}
+          />
+          <TickerItem
+            label="HOMEOWNERSHIP"
+            value={fmt(live.ohio_homeownership_rate.value, "", "%", 1)}
+            metric={live.ohio_homeownership_rate}
+          />
+          <TickerItem
+            label="LISTING PRICE"
+            value={fmtK(live.ohio_listing_price.value)}
+            metric={live.ohio_listing_price}
+          />
+          <TickerItem
             label="30-YR MORTGAGE"
             value={fmt(live.mortgage_rate_30yr.value, "", "%")}
-            source={live.mortgage_rate_30yr.source}
-            date={live.mortgage_rate_30yr.date}
-          />
-          <TickerItem
-            label="OH LISTING PRICE"
-            value={fmtK(live.ohio_listing_price.value)}
-            source={live.ohio_listing_price.source}
-            date={live.ohio_listing_price.date}
-          />
-          <TickerItem
-            label="OH UNEMPLOYMENT"
-            value={fmt(live.ohio_unemployment.value, "", "%")}
-            source={live.ohio_unemployment.source}
-            date={live.ohio_unemployment.date}
-          />
-          <TickerItem
-            label="OH HPI"
-            value={fmt(live.ohio_hpi.value, "", "", 1)}
-            source={live.ohio_hpi.source}
-            date={live.ohio_hpi.date}
+            metric={live.mortgage_rate_30yr}
           />
           <TickerItem
             label="FED FUNDS"
             value={fmt(live.fed_funds_rate.value, "", "%")}
-            source={live.fed_funds_rate.source}
-            date={live.fed_funds_rate.date}
+            metric={live.fed_funds_rate}
           />
-
-          {/* Active listings */}
           <TickerItem
-            label="OH ACTIVE LISTINGS"
-            value={live.ohio_active_listings.value != null ? live.ohio_active_listings.value.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}
-            source={live.ohio_active_listings.source}
-            date={live.ohio_active_listings.date}
+            label="OH HPI"
+            value={fmt(live.ohio_hpi.value, "", "", 1)}
+            metric={live.ohio_hpi}
           />
         </div>
 

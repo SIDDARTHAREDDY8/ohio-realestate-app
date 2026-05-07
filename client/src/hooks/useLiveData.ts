@@ -1,137 +1,217 @@
 /**
- * useLiveData — fetches live economic indicators directly from FRED API
- * Falls back to static JSON if API is unavailable or no key is set.
+ * useLiveData — fetches live data from CORS-enabled public APIs
  *
- * FRED API key: free at https://fred.stlouisfed.org/docs/api/api_key.html
- * Set VITE_FRED_API_KEY in your .env file to enable live data.
- * Without a key, the hook returns the latest values from the static JSON cache.
+ * Live sources (no API key required):
+ *   - US Census Bureau ACS 5-Year API (api.census.gov) — housing metrics
+ *   - BLS Public Data API v1 (api.bls.gov) — Ohio unemployment rate
+ *
+ * Static sources (from last pipeline run):
+ *   - FRED economic indicators (mortgage rate, HPI, fed funds, listing price)
+ *   - These update monthly via GitHub Actions
+ *
+ * Design decision: no "CACHED" labels. Static data shows source + date.
+ * Live data shows source + "as of [date]". Both are real data.
  */
 
 import { useState, useEffect } from "react";
 import staticKpis from "@/data/kpis.json";
 import staticMeta from "@/data/pipeline_meta.json";
 
-const FRED_API_KEY = import.meta.env.VITE_FRED_API_KEY as string | undefined;
-const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
+const kpis = staticKpis as any;
+const meta = staticMeta as any;
 
-interface LiveMetric {
+// BLS series IDs
+const BLS_OHIO_UNEMPLOYMENT = "LASST390000000000003"; // Ohio statewide unemployment
+
+// Census ACS variables for Ohio state-level
+const CENSUS_VARS = "B25077_001E,B25064_001E,B19013_001E,B25003_002E,B25003_001E";
+const CENSUS_URL = `https://api.census.gov/data/2023/acs/acs5?get=NAME,${CENSUS_VARS}&for=state:39`;
+
+export interface LiveMetric {
   value: number | null;
   date: string | null;
-  source: "live" | "cached";
-  series_id: string;
+  source: string;
+  isLive: boolean;
 }
 
-interface LiveData {
+export interface LiveData {
+  // Live from BLS
+  ohio_unemployment: LiveMetric;
+  // Live from Census ACS
+  ohio_median_home_value: LiveMetric;
+  ohio_median_rent: LiveMetric;
+  ohio_median_income: LiveMetric;
+  ohio_homeownership_rate: LiveMetric;
+  // Static from FRED (updated monthly by pipeline)
   mortgage_rate_30yr: LiveMetric;
   ohio_listing_price: LiveMetric;
-  ohio_unemployment: LiveMetric;
   ohio_hpi: LiveMetric;
   fed_funds_rate: LiveMetric;
   ohio_active_listings: LiveMetric;
+  // Meta
   isLoading: boolean;
-  lastFetched: string | null;
-  apiEnabled: boolean;
+  lastPipelineRun: string | null;
+  fetchedAt: string | null;
 }
 
-async function fetchFredSeries(seriesId: string): Promise<{ value: number; date: string } | null> {
-  if (!FRED_API_KEY) return null;
+async function fetchBLSUnemployment(): Promise<{ value: number; date: string } | null> {
   try {
-    const url = `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_API_KEY}&file_type=json&sort_order=desc&limit=1`;
+    const url = `https://api.bls.gov/publicAPI/v1/timeseries/data/${BLS_OHIO_UNEMPLOYMENT}?startyear=2025&endyear=2026`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
-    const obs = data?.observations?.[0];
-    if (!obs || obs.value === ".") return null;
-    return { value: parseFloat(obs.value), date: obs.date };
+    const series = data?.Results?.series?.[0];
+    const latest = series?.data?.[0];
+    if (!latest) return null;
+    const monthMap: Record<string, string> = {
+      M01:"Jan",M02:"Feb",M03:"Mar",M04:"Apr",M05:"May",M06:"Jun",
+      M07:"Jul",M08:"Aug",M09:"Sep",M10:"Oct",M11:"Nov",M12:"Dec"
+    };
+    const month = monthMap[latest.period] ?? latest.period;
+    return {
+      value: parseFloat(latest.value),
+      date: `${month} ${latest.year}${latest.footnotes?.[0]?.code === "P" ? " (prelim.)" : ""}`,
+    };
   } catch {
     return null;
   }
 }
 
-const kpis = staticKpis as any;
-const meta = staticMeta as any;
+async function fetchCensusOhio(): Promise<{
+  median_home_value: number;
+  median_rent: number;
+  median_income: number;
+  homeownership_rate: number;
+} | null> {
+  try {
+    const res = await fetch(CENSUS_URL);
+    if (!res.ok) return null;
+    const data = await res.json();
+    // data[0] = headers, data[1] = Ohio values
+    const headers: string[] = data[0];
+    const vals: string[] = data[1];
+    const get = (key: string) => parseFloat(vals[headers.indexOf(key)] ?? "0") || null;
+
+    const totalUnits = get("B25003_001E") ?? 1;
+    const ownerOccupied = get("B25003_002E") ?? 0;
+
+    return {
+      median_home_value: get("B25077_001E") ?? 0,
+      median_rent: get("B25064_001E") ?? 0,
+      median_income: get("B19013_001E") ?? 0,
+      homeownership_rate: Math.round((ownerOccupied / totalUnits) * 1000) / 10,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const STATIC_DATE = meta.last_refresh
+  ? new Date(meta.last_refresh).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  : "May 2026";
 
 export function useLiveData(): LiveData {
-  const apiEnabled = !!FRED_API_KEY;
-
   const [data, setData] = useState<LiveData>({
+    ohio_unemployment: {
+      value: kpis.unemployment_rate ?? null,
+      date: STATIC_DATE,
+      source: "BLS",
+      isLive: false,
+    },
+    ohio_median_home_value: {
+      value: kpis.statewide?.avg_home_value ?? null,
+      date: "2023 ACS",
+      source: "Census ACS",
+      isLive: false,
+    },
+    ohio_median_rent: {
+      value: kpis.statewide?.avg_rent ?? null,
+      date: "2023 ACS",
+      source: "Census ACS",
+      isLive: false,
+    },
+    ohio_median_income: {
+      value: null,
+      date: "2023 ACS",
+      source: "Census ACS",
+      isLive: false,
+    },
+    ohio_homeownership_rate: {
+      value: kpis.statewide?.avg_homeownership_rate ?? null,
+      date: "2023 ACS",
+      source: "Census ACS",
+      isLive: false,
+    },
     mortgage_rate_30yr: {
       value: kpis.mortgage_rate_30yr ?? null,
-      date: null,
-      source: "cached",
-      series_id: "MORTGAGE30US",
+      date: STATIC_DATE,
+      source: "FRED · MORTGAGE30US",
+      isLive: false,
     },
     ohio_listing_price: {
       value: kpis.latest_listing_price ?? null,
-      date: null,
-      source: "cached",
-      series_id: "MEDLISPRIOH",
-    },
-    ohio_unemployment: {
-      value: kpis.unemployment_rate ?? null,
-      date: null,
-      source: "cached",
-      series_id: "OHUR",
+      date: STATIC_DATE,
+      source: "FRED · MEDLISPRIOH",
+      isLive: false,
     },
     ohio_hpi: {
       value: kpis.hpi ?? null,
-      date: null,
-      source: "cached",
-      series_id: "OHSTHPI",
+      date: STATIC_DATE,
+      source: "FRED · OHSTHPI",
+      isLive: false,
     },
     fed_funds_rate: {
       value: kpis.fed_funds_rate ?? null,
-      date: null,
-      source: "cached",
-      series_id: "FEDFUNDS",
+      date: STATIC_DATE,
+      source: "FRED · FEDFUNDS",
+      isLive: false,
     },
     ohio_active_listings: {
       value: kpis.ohio_active_listings ?? null,
-      date: null,
-      source: "cached",
-      series_id: "ACTLISCOUOH",
+      date: STATIC_DATE,
+      source: "FRED · ACTLISCOUOH",
+      isLive: false,
     },
-    isLoading: apiEnabled,
-    lastFetched: meta.last_refresh ?? null,
-    apiEnabled,
+    isLoading: true,
+    lastPipelineRun: meta.last_refresh ?? null,
+    fetchedAt: null,
   });
 
   useEffect(() => {
-    if (!apiEnabled) return;
+    const fetchLive = async () => {
+      const [blsResult, censusResult] = await Promise.allSettled([
+        fetchBLSUnemployment(),
+        fetchCensusOhio(),
+      ]);
 
-    const fetchAll = async () => {
-      const series = [
-        { key: "mortgage_rate_30yr" as const, id: "MORTGAGE30US" },
-        { key: "ohio_listing_price" as const, id: "MEDLISPRIOH" },
-        { key: "ohio_unemployment" as const, id: "OHUR" },
-        { key: "ohio_hpi" as const, id: "OHSTHPI" },
-        { key: "fed_funds_rate" as const, id: "FEDFUNDS" },
-        { key: "ohio_active_listings" as const, id: "ACTLISCOUOH" },
-      ];
+      setData(prev => {
+        const next = { ...prev, isLoading: false, fetchedAt: new Date().toISOString() };
 
-      const results = await Promise.allSettled(
-        series.map(({ id }) => fetchFredSeries(id))
-      );
+        if (blsResult.status === "fulfilled" && blsResult.value) {
+          next.ohio_unemployment = {
+            value: blsResult.value.value,
+            date: blsResult.value.date,
+            source: "BLS",
+            isLive: true,
+          };
+        } else {
+          next.ohio_unemployment = { ...prev.ohio_unemployment, isLoading: false } as any;
+        }
 
-      setData((prev) => {
-        const next = { ...prev, isLoading: false, lastFetched: new Date().toISOString() };
-        results.forEach((result, i) => {
-          const { key, id } = series[i];
-          if (result.status === "fulfilled" && result.value) {
-            (next as any)[key] = {
-              value: result.value.value,
-              date: result.value.date,
-              source: "live" as const,
-              series_id: id,
-            };
-          }
-        });
+        if (censusResult.status === "fulfilled" && censusResult.value) {
+          const c = censusResult.value;
+          next.ohio_median_home_value = { value: c.median_home_value, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
+          next.ohio_median_rent = { value: c.median_rent, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
+          next.ohio_median_income = { value: c.median_income, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
+          next.ohio_homeownership_rate = { value: c.homeownership_rate, date: "2023 ACS 5-yr", source: "Census ACS", isLive: true };
+        }
+
         return next;
       });
     };
 
-    fetchAll();
-  }, [apiEnabled]);
+    fetchLive();
+  }, []);
 
   return data;
 }

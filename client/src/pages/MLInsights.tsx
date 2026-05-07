@@ -1,13 +1,15 @@
-/* Ohio Blueprint — ML Insights
-   XGBoost predictions, market clusters, affordability risk, feature importance
-*/
+/*
+ * ML Insights — Data Terminal style
+ * Model metrics, feature importance, predictions, clusters — all data-first
+ */
 
 import { useMemo, useState } from "react";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend,
+  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
 } from "recharts";
+import { ExternalLink } from "lucide-react";
 import predictions from "@/data/county_value_predictions.json";
 import clusters from "@/data/market_clusters.json";
 import affordability from "@/data/affordability_predictions.json";
@@ -16,57 +18,69 @@ const predData = predictions as any[];
 const clusterData = clusters as any[];
 const affordData = affordability as any[];
 
-const BLUE = "oklch(0.45 0.18 255)";
-const GREEN = "oklch(0.52 0.17 145)";
-const AMBER = "oklch(0.72 0.18 75)";
-const RED = "oklch(0.58 0.22 25)";
-const CYAN = "oklch(0.58 0.16 220)";
+const C1 = "oklch(0.38 0.12 250)";
+const C2 = "oklch(0.52 0.14 220)";
+const C3 = "oklch(0.48 0.16 145)";
+const C4 = "oklch(0.55 0.20 25)";
+const C5 = "oklch(0.62 0.18 75)";
 
-const CLUSTER_COLORS: Record<string, string> = {
-  "Affluent Suburban": "#1D4ED8",
-  "Urban Premium": "#0EA5E9",
-  "Stable Mid-Tier": "#10B981",
-  "Transitional Market": "#F59E0B",
-  "Value Market": "#94A3B8",
-};
-
-const AFFORD_COLORS: Record<string, string> = {
-  "Low Risk": "#10B981",
-  "Moderate": "#F59E0B",
-  "High Risk": "#EF4444",
-  "Severe": "#7F1D1D",
-};
+const CHART_STYLE = { fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" };
 
 function fmtK(n: number | null | undefined) {
   if (n == null) return "—";
   return `$${(n / 1000).toFixed(0)}K`;
 }
 
-// Feature importance from training
+function SectionHeader({ title, source, note }: { title: string; source?: string; note?: string }) {
+  return (
+    <div className="section-header">
+      <span className="section-title">{title}</span>
+      <div className="flex items-center gap-3">
+        {note && <span className="source-tag">{note}</span>}
+        {source && <span className="source-tag">{source}</span>}
+      </div>
+    </div>
+  );
+}
+
 const FEATURE_IMPORTANCE = [
-  { feature: "Prior Year Home Value", importance: 47.1 },
-  { feature: "Median Household Income", importance: 22.4 },
-  { feature: "Median Gross Rent", importance: 6.8 },
-  { feature: "Median Year Built", importance: 4.4 },
-  { feature: "2-Year Lag Home Value", importance: 3.6 },
-  { feature: "Price-to-Income Ratio", importance: 3.5 },
-  { feature: "Housing Stock Age", importance: 2.8 },
-  { feature: "Median Rooms", importance: 2.4 },
-  { feature: "Persons per Unit", importance: 1.4 },
-  { feature: "Vacancy Rate", importance: 1.0 },
+  { feature: "Prior Year Home Value (lag1)", importance: 47.1, category: "lag" },
+  { feature: "Median Household Income", importance: 22.4, category: "economic" },
+  { feature: "Median Gross Rent", importance: 6.8, category: "housing" },
+  { feature: "Median Year Built", importance: 4.4, category: "housing" },
+  { feature: "2-Year Lag Home Value", importance: 3.6, category: "lag" },
+  { feature: "Price-to-Income Ratio", importance: 3.5, category: "derived" },
+  { feature: "Housing Stock Age", importance: 2.8, category: "derived" },
+  { feature: "Median Rooms", importance: 2.4, category: "housing" },
+  { feature: "Persons per Unit", importance: 1.4, category: "derived" },
+  { feature: "Vacancy Rate", importance: 1.0, category: "housing" },
 ];
 
-const MODEL_METRICS = [
-  { model: "XGBoost", r2: 0.9856, mae: 3389, mape: 2.04, color: BLUE },
-  { model: "Gradient Boosting", r2: 0.9909, mae: 2799, mape: 1.68, color: GREEN },
-  { model: "Random Forest", r2: 0.9626, mae: 4484, mape: 2.56, color: AMBER },
-  { model: "Ridge Regression", r2: 0.9784, mae: 5530, mape: 3.80, color: CYAN },
+const MODEL_COMPARISON = [
+  { model: "XGBoost", r2: 0.9856, mae: 3389, mape: 2.04, cv_r2: "0.977±0.015", color: C1 },
+  { model: "Gradient Boosting", r2: 0.9909, mae: 2799, mape: 1.68, cv_r2: "—", color: C3 },
+  { model: "Random Forest", r2: 0.9626, mae: 4484, mape: 2.56, cv_r2: "—", color: C2 },
+  { model: "Ridge Regression", r2: 0.9784, mae: 5530, mape: 3.80, cv_r2: "—", color: C5 },
 ];
+
+const CLUSTER_COLORS: Record<string, string> = {
+  "Affluent Suburban": C1,
+  "Urban Premium": C2,
+  "Stable Mid-Tier": C3,
+  "Transitional Market": C5,
+  "Value Market": "oklch(0.65 0.005 240)",
+};
+
+const AFFORD_COLORS: Record<string, string> = {
+  "Low Risk": C3,
+  "Moderate": C5,
+  "High Risk": C4,
+  "Severe": "oklch(0.40 0.22 25)",
+};
 
 export default function MLInsights() {
   const [activeCluster, setActiveCluster] = useState<string | null>(null);
 
-  // Scatter: actual vs predicted
   const scatterData = useMemo(() =>
     predData.map(d => ({
       actual: d.median_home_value,
@@ -77,7 +91,6 @@ export default function MLInsights() {
     []
   );
 
-  // Cluster distribution
   const clusterCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     clusterData.forEach(d => {
@@ -86,7 +99,6 @@ export default function MLInsights() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, []);
 
-  // Affordability risk distribution
   const affordCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     affordData.forEach(d => {
@@ -95,213 +107,236 @@ export default function MLInsights() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, []);
 
-  // Filtered cluster counties
   const filteredCluster = useMemo(() =>
     activeCluster ? clusterData.filter(d => d.cluster_label === activeCluster) : clusterData,
     [activeCluster]
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="chart-container">
-        <div className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "oklch(0.45 0.18 255)" }}>Machine Learning</div>
-        <h2 className="text-xl font-bold text-foreground">ML Model Insights</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          4 production models trained on real Ohio data: XGBoost home value predictor (R²=0.986), Prophet HPI forecaster, K-Means market clustering, and Random Forest affordability classifier.
-        </p>
+    <div className="p-4 space-y-4">
+
+      {/* Model comparison table */}
+      <div className="panel">
+        <SectionHeader title="Model Comparison — Home Value Prediction" source="XGBoost 2.0 + scikit-learn 1.4" note="Target: median_home_value · 440 county-year observations · 80/20 train/test split" />
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>R² (test)</th>
+                <th>MAE</th>
+                <th>MAPE</th>
+                <th>5-Fold CV R²</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MODEL_COMPARISON.map(m => (
+                <tr key={m.model}>
+                  <td style={{ fontWeight: 500 }}>{m.model}</td>
+                  <td className="mono font-semibold" style={{ color: m.color }}>{m.r2.toFixed(4)}</td>
+                  <td className="mono">${m.mae.toLocaleString()}</td>
+                  <td className="mono">{m.mape.toFixed(2)}%</td>
+                  <td className="mono">{m.cv_r2}</td>
+                  <td>
+                    {m.model === "XGBoost" ? (
+                      <span className="source-tag" style={{ color: C3, fontWeight: 600 }}>● DEPLOYED</span>
+                    ) : (
+                      <span className="source-tag">baseline</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-3 py-2 source-tag" style={{ borderTop: "1px solid var(--border)" }}>
+          XGBoost selected for production (inference speed). Gradient Boosting achieves marginally better test metrics but slower prediction.
+          CV R² = 0.977 ± 0.015 confirms model generalizes well across counties and years.
+        </div>
       </div>
 
-      {/* Model comparison */}
-      <div className="chart-container">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Model Performance Comparison</h3>
-        <p className="text-xs text-muted-foreground mb-4">Home value prediction — 5-fold cross-validation on 440 county-year observations</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {MODEL_METRICS.map(m => (
-            <div key={m.model} className="rounded-lg border p-4" style={{ borderColor: "oklch(0.90 0.008 240)" }}>
-              <div className="text-xs font-semibold text-muted-foreground mb-2">{m.model}</div>
-              <div className="data-value text-2xl font-bold mb-1" style={{ color: m.color }}>{m.r2.toFixed(4)}</div>
-              <div className="text-xs text-muted-foreground">R² Score</div>
-              <div className="mt-2 text-xs text-muted-foreground">MAE: <span className="data-value font-semibold text-foreground">${m.mae.toLocaleString()}</span></div>
-              <div className="text-xs text-muted-foreground">MAPE: <span className="data-value font-semibold text-foreground">{m.mape}%</span></div>
+      {/* Scatter + Feature importance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="Actual vs. Predicted — 88 Ohio Counties (2023)" source="XGBoost" note="Perfect prediction = diagonal line" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={240}>
+              <ScatterChart margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
+                <XAxis
+                  dataKey="actual" name="Actual" type="number"
+                  tick={CHART_STYLE} tickLine={false} axisLine={false}
+                  tickFormatter={v => `$${(v/1000).toFixed(0)}K`}
+                  label={{ value: "Actual ($)", position: "insideBottom", offset: -5, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
+                />
+                <YAxis
+                  dataKey="predicted" name="Predicted" type="number"
+                  tick={CHART_STYLE} tickLine={false} axisLine={false}
+                  tickFormatter={v => `$${(v/1000).toFixed(0)}K`}
+                  width={52}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }}
+                  formatter={(v: any, name: string) => [`$${Number(v).toLocaleString()}`, name]}
+                  labelFormatter={(_, payload) => payload?.[0]?.payload?.county ?? ""}
+                />
+                <Scatter data={scatterData} fill={C1} fillOpacity={0.65} r={4} />
+              </ScatterChart>
+            </ResponsiveContainer>
+            <div className="source-tag mt-1">
+              Outliers above diagonal = model underestimates (Delaware, Warren counties).
+              R²=0.986 means 98.6% of variance in home values explained by the 21 features.
             </div>
-          ))}
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-          <strong>Best Model:</strong> Gradient Boosting (R²=0.9909, MAPE=1.68%) — deployed for county value predictions.
-          5-Fold CV R²: 0.977 ± 0.015 confirms generalization. XGBoost selected for production due to inference speed.
+
+        <div className="panel">
+          <SectionHeader title="Feature Importance (XGBoost Gain)" source="xgboost.get_score(importance_type='gain')" />
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart
+                data={FEATURE_IMPORTANCE}
+                layout="vertical"
+                margin={{ top: 0, right: 8, left: 155, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
+                <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} />
+                <YAxis type="category" dataKey="feature" tick={{ ...CHART_STYLE, fontSize: 9 }} tickLine={false} axisLine={false} width={155} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Importance"]} />
+                <Bar dataKey="importance" radius={[0, 2, 2, 0]}>
+                  {FEATURE_IMPORTANCE.map((entry, i) => (
+                    <Cell key={i} fill={entry.category === "lag" ? C1 : entry.category === "economic" ? C3 : entry.category === "derived" ? C5 : C2} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="source-tag mt-1">
+              <span style={{ color: C1 }}>■</span> Lag features &nbsp;
+              <span style={{ color: C3 }}>■</span> Economic &nbsp;
+              <span style={{ color: C2 }}>■</span> Housing stock &nbsp;
+              <span style={{ color: C5 }}>■</span> Derived ratios
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Actual vs Predicted + Feature Importance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Actual vs. Predicted Home Values</h3>
-          <p className="text-xs text-muted-foreground mb-4">XGBoost predictions for all 88 Ohio counties (2023)</p>
-          <ResponsiveContainer width="100%" height={260}>
-            <ScatterChart margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" />
-              <XAxis
-                dataKey="actual"
-                name="Actual"
-                type="number"
-                tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={v => `$${(v/1000).toFixed(0)}K`}
-                label={{ value: "Actual", position: "insideBottom", offset: -5, fontSize: 10 }}
-              />
-              <YAxis
-                dataKey="predicted"
-                name="Predicted"
-                type="number"
-                tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={v => `$${(v/1000).toFixed(0)}K`}
-                width={55}
-              />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                formatter={(v: any, name: string) => [`$${Number(v).toLocaleString()}`, name]}
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.county ?? ""}
-              />
-              <Scatter data={scatterData} fill={BLUE} fillOpacity={0.7} />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Feature Importance (XGBoost)</h3>
-          <p className="text-xs text-muted-foreground mb-4">Top 10 features by gain — % contribution to predictions</p>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart
-              data={FEATURE_IMPORTANCE}
-              layout="vertical"
-              margin={{ top: 0, right: 10, left: 140, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.008 240)" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} />
-              <YAxis type="category" dataKey="feature" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={140} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Importance"]} />
-              <Bar dataKey="importance" radius={[0, 4, 4, 0]}>
-                {FEATURE_IMPORTANCE.map((_, i) => (
-                  <Cell key={i} fill={i === 0 ? BLUE : i === 1 ? CYAN : "oklch(0.75 0.08 255)"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Market Clusters */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">K-Means Market Clusters (k=5)</h3>
-          <p className="text-xs text-muted-foreground mb-4">Market archetypes identified across 88 Ohio counties — click to filter</p>
-          <div className="flex gap-2 flex-wrap mb-4">
+      {/* Clusters + Affordability */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="panel">
+          <SectionHeader title="K-Means Market Clusters (k=5)" source="scikit-learn KMeans" note="9 features · StandardScaler · 20 inits · Elbow: k=2–8" />
+          <div className="px-3 py-2 flex flex-wrap gap-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
             {Object.entries(CLUSTER_COLORS).map(([label, color]) => (
               <button
                 key={label}
                 onClick={() => setActiveCluster(activeCluster === label ? null : label)}
-                className="text-xs px-2.5 py-1 rounded-full font-medium border transition-all"
+                className="text-xs px-2 py-0.5 rounded transition-all"
                 style={{
-                  borderColor: color,
+                  border: `1px solid ${color}`,
                   color: activeCluster === label ? "white" : color,
-                  backgroundColor: activeCluster === label ? color : "transparent",
+                  background: activeCluster === label ? color : "transparent",
+                  fontFamily: "'IBM Plex Mono', monospace",
                 }}
               >
                 {label}
               </button>
             ))}
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={clusterCounts}
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, value }) => `${name}: ${value}`}
-                labelLine={false}
-              >
-                {clusterCounts.map((entry, i) => (
-                  <Cell key={i} fill={CLUSTER_COLORS[entry.name] ?? "#94A3B8"} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="p-3">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie
+                  data={clusterCounts}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  dataKey="value"
+                  nameKey="name"
+                  label={({ name, value }) => `${name}: ${value}`}
+                  labelLine={false}
+                >
+                  {clusterCounts.map((entry, i) => (
+                    <Cell key={i} fill={CLUSTER_COLORS[entry.name] ?? "oklch(0.65 0.005 240)"} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="source-tag mt-1">76 of 88 counties = Value Market. Ohio is predominantly affordable vs. coastal markets.</div>
+          </div>
         </div>
 
-        <div className="chart-container">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Affordability Risk Classification</h3>
-          <p className="text-xs text-muted-foreground mb-4">Random Forest classifier — 88 Ohio counties, 2023</p>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {affordCounts.map(a => (
-              <div key={a.name} className="rounded-lg p-3 border" style={{ borderColor: "oklch(0.90 0.008 240)" }}>
-                <div className="data-value text-2xl font-bold mb-0.5" style={{ color: AFFORD_COLORS[a.name] ?? BLUE }}>
-                  {a.value}
+        <div className="panel">
+          <SectionHeader title="Affordability Risk Classification" source="Random Forest Classifier" note="4-class · 11 features · stratified 80/20 split · acc=0.89+" />
+          <div className="p-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {affordCounts.map(a => (
+                <div key={a.name} className="panel p-3">
+                  <div className="data-value text-2xl font-bold mb-0.5" style={{ color: AFFORD_COLORS[a.name] ?? C1 }}>
+                    {a.value}
+                  </div>
+                  <div className="source-tag">{a.name}</div>
                 </div>
-                <div className="text-xs text-muted-foreground">{a.name}</div>
-              </div>
-            ))}
-          </div>
-          <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-            <strong>Affordability Index:</strong> Ratio of 5× median income to median home value.
-            Index ≥ 100 = affordable; 80–99 = moderate; &lt;80 = stressed.
+              ))}
+            </div>
+            <div className="source-tag">
+              Affordability Index = (5 × median income) / median home value × 100.
+              Low Risk ≥ 100 · Moderate 80–99 · High Risk 60–79 · Severe &lt; 60.
+            </div>
           </div>
         </div>
       </div>
 
-      {/* County predictions table */}
-      <div className="chart-container overflow-hidden">
-        <h3 className="text-sm font-semibold text-foreground mb-1">XGBoost Predictions — All 88 Counties</h3>
-        <p className="text-xs text-muted-foreground mb-4">Actual vs. predicted median home value with error percentage</p>
+      {/* Full predictions table */}
+      <div className="panel overflow-hidden">
+        <SectionHeader
+          title="XGBoost Predictions — All 88 Ohio Counties (2023)"
+          source="pipeline/src/models/train_models.py"
+          note="Sorted by actual home value descending"
+        />
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="data-table">
             <thead>
-              <tr className="border-b" style={{ borderColor: "oklch(0.90 0.008 240)" }}>
-                {["County", "Actual Value", "Predicted Value", "Error %", "Market Cluster", "Afford. Risk"].map(h => (
-                  <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground">{h}</th>
-                ))}
+              <tr>
+                <th>#</th>
+                <th>County</th>
+                <th>Actual Value</th>
+                <th>Predicted Value</th>
+                <th>Error %</th>
+                <th>Market Cluster</th>
+                <th>Afford. Risk</th>
               </tr>
             </thead>
             <tbody>
               {predData
                 .sort((a, b) => (b.median_home_value ?? 0) - (a.median_home_value ?? 0))
-                .map(d => {
+                .map((d, i) => {
                   const cluster = clusterData.find(c => c.county_fips === d.county_fips);
                   const afford = affordData.find(a => a.county_fips === d.county_fips);
                   const err = d.prediction_error_pct;
                   return (
-                    <tr key={d.county_fips} className="border-b hover:bg-muted/40 transition-colors" style={{ borderColor: "oklch(0.93 0.005 240)" }}>
-                      <td className="py-2 px-3 font-medium text-foreground">{d.county_name}</td>
-                      <td className="py-2 px-3 data-value font-semibold">{fmtK(d.median_home_value)}</td>
-                      <td className="py-2 px-3 data-value">{fmtK(d.predicted_home_value)}</td>
-                      <td className="py-2 px-3">
+                    <tr key={d.county_fips}>
+                      <td className="mono" style={{ color: "var(--muted-foreground)" }}>{i + 1}</td>
+                      <td style={{ fontWeight: 500 }}>{d.county_name}</td>
+                      <td className="mono font-semibold">{fmtK(d.median_home_value)}</td>
+                      <td className="mono">{fmtK(d.predicted_home_value)}</td>
+                      <td>
                         {err != null ? (
-                          <span className={`data-value text-xs font-semibold ${Math.abs(err) < 5 ? "trend-up" : Math.abs(err) < 10 ? "trend-neutral" : "trend-down"}`}>
+                          <span className={`mono text-xs font-semibold ${Math.abs(err) < 5 ? "trend-up" : Math.abs(err) < 10 ? "" : "trend-down"}`}>
                             {err >= 0 ? "+" : ""}{err.toFixed(1)}%
                           </span>
                         ) : "—"}
                       </td>
-                      <td className="py-2 px-3">
+                      <td>
                         {cluster?.cluster_label && (
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{
-                            backgroundColor: (CLUSTER_COLORS[cluster.cluster_label] ?? "#94A3B8") + "20",
-                            color: CLUSTER_COLORS[cluster.cluster_label] ?? "#94A3B8",
-                            fontWeight: 600,
-                          }}>
+                          <span className="source-tag" style={{ color: CLUSTER_COLORS[cluster.cluster_label] ?? "var(--muted-foreground)", fontWeight: 600 }}>
                             {cluster.cluster_label}
                           </span>
                         )}
                       </td>
-                      <td className="py-2 px-3">
+                      <td>
                         {afford?.affordability_risk_pred && (
-                          <span className="text-xs font-semibold" style={{ color: AFFORD_COLORS[afford.affordability_risk_pred] ?? BLUE }}>
+                          <span className="source-tag font-semibold" style={{ color: AFFORD_COLORS[afford.affordability_risk_pred] ?? C1 }}>
                             {afford.affordability_risk_pred}
                           </span>
                         )}
