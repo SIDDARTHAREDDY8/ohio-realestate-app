@@ -17,8 +17,10 @@ import {
   X,
   Building2,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import pipelineMeta from "@/data/pipeline_meta.json";
 
 const NAV_ITEMS = [
   { path: "/", label: "Overview", icon: LayoutDashboard, description: "Statewide KPIs & summary" },
@@ -28,6 +30,22 @@ const NAV_ITEMS = [
   { path: "/economic-indicators", label: "Economic Data", icon: BarChart3, description: "FRED indicators" },
   { path: "/about", label: "About & Data", icon: Info, description: "Sources & methodology" },
 ];
+
+const meta = pipelineMeta as {
+  last_refresh: string;
+  data_sources: string[];
+  counties_covered: number;
+  refresh_schedule: string;
+};
+
+function formatRefreshDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return iso.substring(0, 10);
+  }
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -114,16 +132,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        {/* Data sources footer */}
-        <div className="px-4 py-4 border-t" style={{ borderColor: "oklch(0.22 0.03 255)" }}>
+        {/* Data sources + refresh footer */}
+        <div className="px-4 py-4 border-t space-y-3" style={{ borderColor: "oklch(0.22 0.03 255)" }}>
+          {/* Last refresh badge */}
+          <div
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
+            style={{ backgroundColor: "oklch(0.18 0.03 255)" }}
+          >
+            <RefreshCw className="w-3 h-3 flex-shrink-0" style={{ color: "oklch(0.55 0.18 255)" }} />
+            <div className="min-w-0">
+              <div className="text-xs font-semibold" style={{ color: "oklch(0.55 0.18 255)" }}>
+                Auto-refresh
+              </div>
+              <div className="text-xs" style={{ color: "oklch(0.45 0.02 240)" }}>
+                {formatRefreshDate(meta.last_refresh)}
+              </div>
+            </div>
+          </div>
+
+          {/* Data sources */}
           <div className="text-xs" style={{ color: "oklch(0.42 0.02 240)" }}>
             <div className="font-semibold mb-1" style={{ color: "oklch(0.55 0.02 240)" }}>Data Sources</div>
-            <div>US Census Bureau ACS</div>
-            <div>Redfin Market Tracker</div>
-            <div>FRED / St. Louis Fed</div>
-            <div className="mt-2" style={{ color: "oklch(0.35 0.02 240)" }}>
-              Updated: May 2026
-            </div>
+            {meta.data_sources.map(src => (
+              <div key={src}>{src}</div>
+            ))}
           </div>
         </div>
       </aside>
@@ -159,16 +191,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              className="text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1"
               style={{
                 backgroundColor: "oklch(0.94 0.015 255)",
                 color: "oklch(0.35 0.15 255)",
               }}
             >
-              Live Data
+              <RefreshCw className="w-2.5 h-2.5" />
+              Monthly Auto-Refresh
             </span>
             <span className="text-xs text-muted-foreground hidden sm:block">
-              88 Ohio Counties
+              {meta.counties_covered} Ohio Counties
             </span>
           </div>
         </header>

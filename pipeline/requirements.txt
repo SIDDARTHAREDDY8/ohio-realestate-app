@@ -1,0 +1,26 @@
+# Ohio Real Estate Market Intelligence Platform
+# Python dependencies for the data pipeline
+# Used by GitHub Actions and local development
+
+# Data I/O
+requests>=2.31.0
+pandas>=2.1.0
+numpy>=1.26.0
+pyarrow>=14.0.0
+
+# Analytical warehouse
+duckdb>=0.10.0
+
+# Machine learning
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+lightgbm>=4.3.0
+
+# Time-series forecasting
+prophet>=1.1.5
+
+# Statistical modeling
+statsmodels>=0.14.0
+
+# Utilities
+tqdm>=4.66.0

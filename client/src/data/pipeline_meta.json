@@ -1,0 +1,9 @@
+{
+  "last_refresh": "2026-05-07T18:11:49.301694+00:00",
+  "data_sources": [
+    "US Census Bureau ACS",
+    "Redfin Market Tracker",
+    "FRED"
+  ],
+  "counties_covered": 88
+}
