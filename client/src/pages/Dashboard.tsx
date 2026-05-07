@@ -305,10 +305,10 @@ export default function Dashboard() {
           <SectionHeader title="Top 10 Counties by Median Home Value (2023)" source="ACS B25077" url="https://data.census.gov" />
           <div className="p-3">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={top10} layout="vertical" margin={{ top: 0, right: 8, left: 90, bottom: 0 }}>
+              <BarChart data={top10} layout="vertical" margin={{ top: 0, right: 8, left: 120, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-                <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
+                <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Median Value"]} />
                 <Bar dataKey="median_home_value_2023" fill={C1} radius={[0, 2, 2, 0]} />
               </BarChart>
@@ -323,11 +323,11 @@ export default function Dashboard() {
               <BarChart
                 data={[...counties].filter(c => c.home_value_5yr_change != null).sort((a, b) => b.home_value_5yr_change - a.home_value_5yr_change).slice(0, 10)}
                 layout="vertical"
-                margin={{ top: 0, right: 8, left: 90, bottom: 0 }}
+                margin={{ top: 0, right: 8, left: 120, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
-                <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
+                <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "5-Yr Change"]} />
                 <Bar dataKey="home_value_5yr_change" fill={C3} radius={[0, 2, 2, 0]} />
               </BarChart>

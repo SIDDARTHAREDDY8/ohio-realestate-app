@@ -123,7 +123,9 @@ export default function MarketTrends() {
       const o = oldest.get(region);
       if (o && o.median_sale_price && l.median_sale_price) {
         const change = (l.median_sale_price - o.median_sale_price) / o.median_sale_price * 100;
-        result.push({ region, latest_price: l.median_sale_price, change });
+        // Strip ", OH" suffix from Redfin region names for cleaner display
+        const label = region.replace(/, OH$/, "");
+        result.push({ region: label, latest_price: l.median_sale_price, change });
       }
     });
     return result.sort((a, b) => b.change - a.change).slice(0, 10);
@@ -309,10 +311,10 @@ export default function MarketTrends() {
           <SectionHeader title="Top 10 Counties — Price Appreciation (2012→2026)" source="Redfin · median_sale_price" />
           <div className="p-3">
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={topAppreciation} layout="vertical" margin={{ top: 0, right: 8, left: 100, bottom: 0 }}>
+              <BarChart data={topAppreciation} layout="vertical" margin={{ top: 0, right: 8, left: 120, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
-                <YAxis type="category" dataKey="region" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={100} />
+                <YAxis type="category" dataKey="region" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Appreciation"]} />
                 <Bar dataKey="change" fill={C3} radius={[0, 2, 2, 0]} />
               </BarChart>
