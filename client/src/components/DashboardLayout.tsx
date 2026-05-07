@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Map, TrendingUp, Brain, BarChart3, Info,
-  Menu, X, Database, Activity, ArrowUpRight, ArrowDownRight,
+  Menu, X, Database, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLiveData } from "@/hooks/useLiveData";
@@ -208,11 +208,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             date={live.fed_funds_rate.date}
           />
 
-          {/* Status indicator */}
-          <div className="ml-auto flex items-center px-4 gap-2 flex-shrink-0" style={{ borderLeft: "1px solid var(--border)" }}>
-            <Activity className="w-3 h-3" style={{ color: live.apiEnabled ? "oklch(0.52 0.16 145)" : "oklch(0.52 0.008 240)" }} />
-            <span className="source-tag">{live.apiEnabled ? "LIVE" : "STATIC"}</span>
-          </div>
+          {/* Active listings */}
+          <TickerItem
+            label="OH ACTIVE LISTINGS"
+            value={live.ohio_active_listings.value != null ? live.ohio_active_listings.value.toLocaleString("en-US", { maximumFractionDigits: 0 }) : "—"}
+            source={live.ohio_active_listings.source}
+            date={live.ohio_active_listings.date}
+          />
         </div>
 
         {/* Page content */}

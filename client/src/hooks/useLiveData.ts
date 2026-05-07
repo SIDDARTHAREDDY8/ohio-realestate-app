@@ -80,13 +80,13 @@ export function useLiveData(): LiveData {
       series_id: "OHSTHPI",
     },
     fed_funds_rate: {
-      value: null,
+      value: kpis.fed_funds_rate ?? null,
       date: null,
       source: "cached",
       series_id: "FEDFUNDS",
     },
     ohio_active_listings: {
-      value: null,
+      value: kpis.ohio_active_listings ?? null,
       date: null,
       source: "cached",
       series_id: "ACTLISCOUOH",
