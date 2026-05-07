@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Ohio Real Estate Market Intelligence</title>
+    <script>
+      // GitHub Pages SPA redirect trick
+      // Redirects all 404s back to index.html preserving the path as a query param
+      // so the React app can handle client-side routing
+      // Store the full URL in sessionStorage and redirect to the base app
+      var segmentCount = 1; // number of path segments in the repo name (1 for /ohio-realestate-app)
+      var l = window.location;
+      sessionStorage.redirect = l.href;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?p=/' +
+        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
