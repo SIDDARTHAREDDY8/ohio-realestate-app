@@ -1,0 +1,15 @@
+{
+  "statewide": {
+    "avg_home_value": 182492.0,
+    "avg_rent": 873.0,
+    "avg_homeownership_rate": 73.4,
+    "avg_vacancy_rate": 9.9,
+    "total_population": 11780046,
+    "avg_5yr_appreciation_pct": 35.3,
+    "county_count": 88
+  },
+  "latest_listing_price": 281950.0,
+  "mortgage_rate_30yr": 6.37,
+  "unemployment_rate": 4.2,
+  "hpi": 509.81
+}

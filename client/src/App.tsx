@@ -1,35 +1,43 @@
+/* Ohio Real Estate Market Intelligence Platform
+   Design: "Ohio Blueprint" — Dark navy sidebar, clean white canvas, Ohio state blue accents
+   Routes: Dashboard, County Explorer, Market Trends, ML Insights, Economic Indicators, About
+*/
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-
+import DashboardLayout from "./components/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import CountyExplorer from "./pages/CountyExplorer";
+import MarketTrends from "./pages/MarketTrends";
+import MLInsights from "./pages/MLInsights";
+import EconomicIndicators from "./pages/EconomicIndicators";
+import About from "./pages/About";
 
 function Router() {
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <DashboardLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/county-explorer" component={CountyExplorer} />
+        <Route path="/market-trends" component={MarketTrends} />
+        <Route path="/ml-insights" component={MLInsights} />
+        <Route path="/economic-indicators" component={EconomicIndicators} />
+        <Route path="/about" component={About} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </DashboardLayout>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <Router />
