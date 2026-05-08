@@ -310,8 +310,8 @@ export default function MarketTrends() {
         <div className="panel">
           <SectionHeader title="Top 10 Counties — Price Appreciation (2012→2026)" source="Redfin · median_sale_price" />
           <div className="p-3">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={topAppreciation} layout="vertical" margin={{ top: 0, right: 8, left: 120, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={topAppreciation} layout="vertical" margin={{ top: 8, right: 8, left: 120, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
                 <YAxis type="category" dataKey="region" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
