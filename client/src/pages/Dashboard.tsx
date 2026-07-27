@@ -128,6 +128,28 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* ── Executive Header ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-border">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">OHIO REAL ESTATE MARKET INTELLIGENCE</h1>
+          <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-1">
+            Institutional Research & Predictive Analytics Platform
+          </p>
+        </div>
+        <div className="flex items-center gap-4 text-right">
+          <div className="source-tag">
+            <div className="font-semibold text-foreground uppercase tracking-tighter">Market Status</div>
+            <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Terminal Connected
+            </div>
+          </div>
+          <div className="source-tag border-l border-border pl-4">
+            <div className="font-semibold text-foreground uppercase tracking-tighter">Last Data Refresh</div>
+            <div className="text-[10px] mt-0.5">2026-07-01 06:00 UTC</div>
+          </div>
+        </div>
+      </div>
 
       {/* ── Top row: stat table + HPI chart ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ alignItems: 'stretch' }}>
