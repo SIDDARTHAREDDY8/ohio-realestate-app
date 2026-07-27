@@ -254,6 +254,21 @@ export default function About() {
         </div>
       </div>
 
+      {/* Corporate Links */}
+      <div className="panel p-4">
+        <div className="flex flex-wrap gap-6 justify-center">
+          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
+            GitHub Repository <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
+            Methodology & Governance <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/MODEL_CARD_HOME_VALUE.md" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
+            Model Card: Home Value Predictor <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      </div>
+
     </div>
   );
 }

@@ -1,20 +1,21 @@
 # Ohio Real Estate Market Intelligence Platform
+**Corporate-Grade Data Engineering & Predictive Analytics Framework**
 
-> End-to-end data engineering and machine learning project analyzing Ohio's housing market across all 88 counties using real public data from the US Census Bureau, Redfin, and the Federal Reserve Bank of St. Louis.
+[![Data Refresh](https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/actions/workflows/refresh-data.yml/badge.svg)](https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/actions/workflows/refresh-data.yml)
+[![CI/CD](https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/actions/workflows/ci.yml/badge.svg)](https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**[Live Demo →](https://siddarthareddy8.github.io/ohio-realestate-app/)**
+> **[Access the Interactive Dashboard →](https://siddarthareddy8.github.io/ohio-realestate-app/)**
 
----
+## Executive Summary
+The Ohio Real Estate Market Intelligence Platform is an end-to-end data science ecosystem designed for high-precision analysis of Ohio's residential real estate landscape. By integrating disparate public data streams from the **US Census Bureau**, **Redfin**, and the **Federal Reserve**, the platform provides a unified "source of truth" for market valuation, affordability risk assessment, and macroeconomic forecasting across all 88 Ohio counties.
 
-## What This Is
-
-A production-grade data science portfolio project demonstrating the full data engineering lifecycle:
-
-- **Automated ETL pipeline** ingesting 3 public data sources into a DuckDB analytical warehouse
-- **4 trained ML models** — regression, time-series forecasting, clustering, and classification
-- **Live data** fetched from Census ACS and BLS APIs directly in the browser (no API key required)
-- **Interactive dashboard** with 6 pages of real Ohio housing market analytics
-- **GitHub Actions CI/CD** — data refreshes automatically on the 1st of every month
+### Core Capabilities
+*   **Automated Analytical Warehouse:** A modular ETL pipeline orchestrates the ingestion of over 50,000 records into a **DuckDB** star schema.
+*   **Multi-Model Predictive Engine:** Deployment of four specialized ML architectures (XGBoost, Prophet, Random Forest, K-Means) for comprehensive market insight.
+*   **Production-Grade Governance:** Comprehensive [Methodology](./docs/METHODOLOGY.md) and [Model Cards](./docs/MODEL_CARD_HOME_VALUE.md) ensure analytical transparency and institutional trust.
+*   **Dynamic Intelligence:** Real-time data acquisition from Census and BLS APIs provides up-to-the-minute market indicators.
+*   **Autonomous Operations:** Full CI/CD integration via GitHub Actions ensures monthly data and model refreshes without manual intervention.
 
 ---
 
