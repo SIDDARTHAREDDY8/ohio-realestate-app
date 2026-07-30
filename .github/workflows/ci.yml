@@ -27,10 +27,10 @@ jobs:
         with:
           node-version: "22"
 
+      # Version comes from the packageManager field in package.json —
+      # pinning it here too makes pnpm/action-setup fail on the mismatch.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
