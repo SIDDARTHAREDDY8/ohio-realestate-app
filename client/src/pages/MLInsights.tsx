@@ -101,9 +101,8 @@ const MODEL_COMPARISON = ((hvMetrics.metrics ?? []) as any[]).map(m => ({
   r2: m.r2,
   mae: m.mae,
   mape: m.mape,
-  // Expanding-window CV is run with the XGBoost configuration
-  cv_r2: m.model === "XGBoost" && hvMetrics.cv_r2_mean != null
-    ? `${hvMetrics.cv_r2_mean.toFixed(3)}±${(hvMetrics.cv_r2_std ?? 0).toFixed(3)}`
+  cv_r2: m.cv_r2_mean != null
+    ? `${m.cv_r2_mean.toFixed(3)} ± ${(m.cv_r2_std ?? 0).toFixed(3)}`
     : "—",
   color: MODEL_COLOR[m.model] ?? C1,
 }));

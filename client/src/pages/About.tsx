@@ -151,57 +151,90 @@ const PIPELINE_STEPS = [
   { step: "07", name: "pipeline/run_pipeline.py", desc: "Orchestrator: runs steps 1–6, exports JSON files (incl. model_metrics.json) to client/src/data/, writes pipeline_meta.json with timestamp and warehouse counts." },
 ];
 
+const REFRESH_DATE = meta.last_refresh
+  ? new Date(meta.last_refresh).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  : "—";
+
+const HERO_STATS = [
+  { label: "Ohio Counties", value: "88" },
+  { label: "Data Sources", value: "4" },
+  { label: "ML Models", value: "4" },
+  { label: "Warehouse Records", value: fmtNum((meta.census_rows ?? 0) + (meta.market_rows ?? 0) + (meta.economic_rows ?? 0)) },
+  { label: "Last Refresh", value: REFRESH_DATE },
+];
+
 export default function About() {
   return (
-    <div className="p-4 space-y-4 max-w-5xl">
+    <div className="p-6 space-y-6 max-w-6xl">
 
-      {/* Project header */}
-      <div className="panel">
-        <SectionHeader title="Ohio Real Estate Market Intelligence Platform — Technical Reference" />
-        <div className="p-4 space-y-2 text-sm" style={{ lineHeight: 1.7 }}>
-          <p>
-            End-to-end data engineering project: automated ETL pipeline ingesting three public data sources into a DuckDB analytical warehouse,
-            four trained ML models (regression, time-series forecasting, clustering, classification), and a React dashboard serving both
-            cached and live data. Built to demonstrate production data engineering patterns — not a tutorial project.
+      {/* Hero */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">About &amp; Data</h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            How this platform works — data provenance, warehouse architecture, model methodology,
+            and the automation that keeps everything fresh.
           </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {["Python 3.11", "DuckDB 0.10", "XGBoost 2.0", "Prophet 1.1", "scikit-learn 1.4", "React 19", "TypeScript", "Recharts", "GitHub Actions"].map(t => (
-              <code key={t} className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--muted)", fontFamily: "'Inter', sans-serif" }}>{t}</code>
-            ))}
+        </div>
+        <span className="badge-cached">Auto-refreshed monthly · GitHub Actions</span>
+      </div>
+
+      {/* Stat band */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {HERO_STATS.map(s => (
+          <div key={s.label} className="panel p-4">
+            <div className="data-value text-xl font-bold" style={{ color: "var(--primary)" }}>{s.value}</div>
+            <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
           </div>
+        ))}
+      </div>
+
+      {/* Overview */}
+      <div className="panel p-5">
+        <div className="text-sm" style={{ lineHeight: 1.75 }}>
+          <span className="font-semibold">Ohio Market IQ</span> is an end-to-end market intelligence
+          platform: an automated ETL pipeline ingests public housing and economic data into a DuckDB
+          analytical warehouse, four machine-learning models are retrained on every refresh, and this
+          dashboard serves the results alongside live Census and BLS metrics. Every number shown in the
+          product is traceable to a public source and reproducible from the pipeline code.
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {["Python 3.11", "DuckDB", "XGBoost", "Prophet", "scikit-learn", "React 19", "TypeScript", "Recharts", "GitHub Actions"].map(t => (
+            <span key={t} className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ background: "var(--accent)", color: "var(--accent-foreground)" }}>
+              {t}
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Data sources */}
-      <div className="panel">
-        <SectionHeader title="Data Sources — Provenance & Limitations" />
-        <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+      <div>
+        <h2 className="text-base font-bold mb-3">Data Sources</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {DATA_SOURCES.map(src => (
-            <div key={src.name} className="p-4">
+            <div key={src.name} className="panel p-4 flex flex-col">
               <div className="flex items-start justify-between mb-2">
-                <div className="text-sm font-semibold">{src.name}</div>
-                <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-tag flex items-center gap-0.5 hover:underline ml-4 flex-shrink-0">
-                  Source <ExternalLink className="w-2.5 h-2.5" />
+                <div className="text-sm font-semibold pr-2">{src.name}</div>
+                <a href={src.url} target="_blank" rel="noopener noreferrer"
+                   className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <div className="font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>API ENDPOINT</div>
-                  <code className="source-tag break-all">{src.api}</code>
-                </div>
-                <div>
-                  <div className="font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>COVERAGE</div>
-                  <div className="source-tag">{src.coverage}</div>
-                  <div className="source-tag mt-0.5">{src.records} · {src.license}</div>
-                </div>
-                <div>
-                  <div className="font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>VARIABLES USED</div>
-                  <div className="source-tag">{src.tables.join(" · ")}</div>
-                </div>
-                <div>
-                  <div className="font-semibold mb-1" style={{ color: "var(--destructive)" }}>KNOWN LIMITATIONS</div>
-                  <div className="source-tag">{src.limitations}</div>
-                </div>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <span className="badge-cached">{src.records}</span>
+                <span className="badge-cached">{src.coverage.split("·")[1]?.trim() ?? src.coverage}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mb-3" style={{ lineHeight: 1.6 }}>
+                Coverage: {src.coverage}. {src.license}.
+              </div>
+              <div className="text-xs mb-3">
+                <div className="font-semibold text-muted-foreground mb-1">Variables used</div>
+                <div className="text-muted-foreground" style={{ lineHeight: 1.7 }}>{src.tables.join(" · ")}</div>
+              </div>
+              <div className="text-xs mt-auto pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="font-semibold mb-1" style={{ color: "var(--destructive)" }}>Known limitations</div>
+                <div className="text-muted-foreground" style={{ lineHeight: 1.6 }}>{src.limitations}</div>
               </div>
             </div>
           ))}
@@ -209,8 +242,10 @@ export default function About() {
       </div>
 
       {/* Warehouse schema */}
-      <div className="panel">
-        <SectionHeader title="DuckDB Warehouse Schema — Star Schema" source="pipeline/src/etl/pipeline.py" />
+      <div>
+        <h2 className="text-base font-bold mb-3">Analytical Warehouse</h2>
+        <div className="panel">
+        <SectionHeader title="DuckDB Star Schema" source="pipeline/src/etl/pipeline.py" />
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
@@ -235,70 +270,106 @@ export default function About() {
             </tbody>
           </table>
         </div>
-        <div className="px-3 py-2 source-tag" style={{ borderTop: "1px solid var(--border)" }}>
-          Warehouse file: pipeline/data/warehouse/ohio_realestate.duckdb · Schema: ohio_re · Engine: DuckDB 0.10 (columnar, in-process)
+        <div className="px-4 py-2.5 source-tag" style={{ borderTop: "1px solid var(--border)" }}>
+          Warehouse file: pipeline/data/warehouse/ohio_realestate.duckdb · Schema: ohio_re · Engine: DuckDB (columnar, in-process)
+        </div>
         </div>
       </div>
 
       {/* ML models */}
-      <div className="panel">
-        <SectionHeader title="ML Model Specifications" source="pipeline/src/models/train_models.py" />
-        <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+      <div>
+        <h2 className="text-base font-bold mb-3">Machine Learning Models</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {ML_MODELS.map(m => (
-            <div key={m.name} className="p-4">
-              <div className="flex items-center gap-3 mb-2">
+            <div key={m.name} className="panel p-4">
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <div className="text-sm font-semibold">{m.name}</div>
-                <code className="source-tag">{m.algorithm}</code>
-                <code className="source-tag">{m.framework}</code>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ background: "var(--accent)", color: "var(--accent-foreground)" }}>
+                  {m.algorithm}
+                </span>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs">
-                <div><span style={{ color: "var(--muted-foreground)" }}>Target: </span><span className="source-tag">{m.target}</span></div>
-                <div><span style={{ color: "var(--muted-foreground)" }}>Validation: </span><span className="source-tag">{m.train_test}</span></div>
-                <div><span style={{ color: "var(--muted-foreground)" }}>Features: </span><span className="source-tag">{m.features}</span></div>
-                <div><span style={{ color: "oklch(0.48 0.16 145)" }}>Metrics: </span><span className="source-tag font-semibold">{m.metrics}</span></div>
-                <div className="lg:col-span-2"><span style={{ color: "var(--muted-foreground)" }}>Notes: </span><span className="source-tag">{m.notes}</span></div>
+              <div className="data-value text-sm font-semibold mb-3" style={{ color: "oklch(0.50 0.15 150)" }}>
+                {m.metrics}
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-20 flex-shrink-0 font-medium">Target</span>
+                  <span>{m.target}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-20 flex-shrink-0 font-medium">Validation</span>
+                  <span>{m.train_test}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-muted-foreground w-20 flex-shrink-0 font-medium">Features</span>
+                  <span>{m.features}</span>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", lineHeight: 1.6 }}>
+                {m.notes}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Pipeline */}
-      <div className="panel">
-        <SectionHeader title="ETL Pipeline — Execution Order" source="pipeline/run_pipeline.py" />
-        <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
-              <tr><th>Step</th><th>Script</th><th>Description</th></tr>
-            </thead>
-            <tbody>
-              {PIPELINE_STEPS.map(s => (
-                <tr key={s.step}>
-                  <td className="mono" style={{ color: "var(--muted-foreground)" }}>{s.step}</td>
-                  <td><code className="source-tag">{s.name}</code></td>
-                  <td className="source-tag">{s.desc}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-3 py-2 source-tag" style={{ borderTop: "1px solid var(--border)" }}>
-          GitHub Actions: .github/workflows/refresh-data.yml · Schedule: cron "0 6 1 * *" (1st of month, 06:00 UTC) · Runner: ubuntu-latest · Timeout: 90 min
+      {/* Pipeline timeline */}
+      <div>
+        <h2 className="text-base font-bold mb-3">Data Pipeline</h2>
+        <div className="panel p-5">
+          <div className="space-y-0">
+            {PIPELINE_STEPS.map((s, i) => (
+              <div key={s.step} className="flex gap-4">
+                {/* Timeline marker */}
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: 28, height: 28, borderRadius: "50%",
+                      background: "var(--accent)", color: "var(--accent-foreground)",
+                      fontSize: 12, fontWeight: 700,
+                    }}>
+                    {i + 1}
+                  </div>
+                  {i < PIPELINE_STEPS.length - 1 && (
+                    <div style={{ width: 2, flex: 1, background: "var(--border)", margin: "4px 0" }} />
+                  )}
+                </div>
+                <div className={i < PIPELINE_STEPS.length - 1 ? "pb-5" : ""}>
+                  <code className="text-xs font-semibold" style={{ color: "var(--primary)" }}>{s.name}</code>
+                  <div className="text-xs text-muted-foreground mt-1" style={{ lineHeight: 1.6 }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-xs text-muted-foreground mt-4 pt-4 flex flex-wrap gap-x-6 gap-y-1"
+            style={{ borderTop: "1px solid var(--border)" }}>
+            <span><span className="font-semibold text-foreground">Schedule:</span> 1st of every month, 06:00 UTC</span>
+            <span><span className="font-semibold text-foreground">Automation:</span> GitHub Actions → commit → auto-deploy</span>
+            <span><span className="font-semibold text-foreground">Runtime:</span> ubuntu-latest, ~10 min</span>
+          </div>
         </div>
       </div>
 
-      {/* Corporate Links */}
-      <div className="panel p-4">
-        <div className="flex flex-wrap gap-6 justify-center">
-          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
-            GitHub Repository <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/METHODOLOGY.md" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
-            Methodology & Governance <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-          <a href="https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/MODEL_CARD_HOME_VALUE.md" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold hover:underline">
-            Model Card: Home Value Predictor <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+      {/* Resources */}
+      <div>
+        <h2 className="text-base font-bold mb-3">Resources</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: "GitHub Repository", desc: "Full source: pipeline, models, dashboard, workflows", href: "https://github.com/SIDDARTHAREDDY8/ohio-realestate-app" },
+            { label: "Methodology & Governance", desc: "Data provenance, validation protocol, ethics", href: "https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/METHODOLOGY.md" },
+            { label: "Model Card: Home Value", desc: "Intended use, metrics, caveats for the flagship model", href: "https://github.com/SIDDARTHAREDDY8/ohio-realestate-app/blob/main/docs/MODEL_CARD_HOME_VALUE.md" },
+          ].map(l => (
+            <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+               className="panel p-4 hover:shadow-md transition-shadow"
+               style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold">{l.label}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <div className="text-xs text-muted-foreground" style={{ lineHeight: 1.6 }}>{l.desc}</div>
+            </a>
+          ))}
         </div>
       </div>
 

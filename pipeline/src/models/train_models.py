@@ -172,22 +172,47 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
     }).sort_values("importance", ascending=False)
     logger.info(f"\n  Top 10 features:\n{feat_importance.head(10).to_string()}")
 
-    # Expanding-window cross-validation: train on all years before each
-    # validation year. No shuffling, so lagged-target features never leak.
-    cv_scores = []
+    # Expanding-window cross-validation for EVERY model: train on all years
+    # before each validation year. No shuffling, so lagged-target features
+    # never leak. Per-model results are shown in the UI comparison table.
     cv_years = sorted(int(y_) for y_ in df_model["year"].unique())[2:]
-    for val_year in cv_years:
-        tr = (df_model["year"] < val_year).to_numpy()
-        va = (df_model["year"] == val_year).to_numpy()
-        if tr.sum() == 0 or va.sum() == 0:
-            continue
-        cv_imputer = SimpleImputer(strategy="median")
-        cv_model = xgb.XGBRegressor(**xgb_params)
-        cv_model.fit(cv_imputer.fit_transform(X[tr]), y[tr], verbose=False)
-        cv_scores.append(r2_score(y[va], cv_model.predict(cv_imputer.transform(X[va]))))
-    cv_scores = np.array(cv_scores)
-    logger.info(f"\n  Expanding-window CV R² (years {cv_years}): "
-                f"{cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
+
+    def fresh_model(name):
+        """New untrained instance + whether it needs feature scaling."""
+        if name == "XGBoost":
+            return xgb.XGBRegressor(**xgb_params), False
+        if name == "GradientBoosting":
+            return GradientBoostingRegressor(
+                n_estimators=200, max_depth=4, learning_rate=0.1,
+                subsample=0.8, random_state=42), False
+        if name == "RandomForest":
+            return RandomForestRegressor(
+                n_estimators=200, max_depth=8, min_samples_leaf=2,
+                random_state=42, n_jobs=-1), False
+        return Ridge(alpha=100), True
+
+    for m in all_metrics:
+        scores = []
+        for val_year in cv_years:
+            tr = (df_model["year"] < val_year).to_numpy()
+            va = (df_model["year"] == val_year).to_numpy()
+            if tr.sum() == 0 or va.sum() == 0:
+                continue
+            cv_imputer = SimpleImputer(strategy="median")
+            X_tr = cv_imputer.fit_transform(X[tr])
+            X_va = cv_imputer.transform(X[va])
+            model, needs_scaling = fresh_model(m["model"])
+            if needs_scaling:
+                sc = StandardScaler()
+                X_tr, X_va = sc.fit_transform(X_tr), sc.transform(X_va)
+            model.fit(X_tr, y[tr])
+            scores.append(r2_score(y[va], model.predict(X_va)))
+        m["cv_r2_mean"] = round(float(np.mean(scores)), 4)
+        m["cv_r2_std"] = round(float(np.std(scores)), 4)
+        logger.info(f"  {m['model']}: expanding-window CV R² (years {cv_years}) = "
+                    f"{m['cv_r2_mean']:.4f} ± {m['cv_r2_std']:.4f}")
+
+    best_cv = next(m for m in all_metrics if m["model"] == best_name)
 
     # Out-of-sample predictions for the held-out year — the model was trained
     # only on earlier years, so these are genuine forecasts, not refits.
@@ -210,8 +235,8 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
         "feature_cols": available_features,
         "feature_importance": feat_importance,
         "metrics": all_metrics,
-        "cv_r2_mean": float(cv_scores.mean()),
-        "cv_r2_std": float(cv_scores.std()),
+        "cv_r2_mean": best_cv["cv_r2_mean"],
+        "cv_r2_std": best_cv["cv_r2_std"],
     }
     with open(MODELS_DIR / "home_value_predictor.pkl", "wb") as f:
         pickle.dump(artifacts, f)
@@ -225,8 +250,8 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
                           "expanding-window CV",
             "test_year": test_year,
             "metrics": all_metrics,
-            "cv_r2_mean": float(cv_scores.mean()),
-            "cv_r2_std": float(cv_scores.std()),
+            "cv_r2_mean": best_cv["cv_r2_mean"],
+            "cv_r2_std": best_cv["cv_r2_std"],
             "n_features": len(available_features),
             "n_samples": len(X),
             "n_train": int(train_mask.sum()),

@@ -11,5 +11,7 @@
   "latest_listing_price": 297500.0,
   "mortgage_rate_30yr": 6.58,
   "unemployment_rate": 3.6,
-  "hpi": 513.93
+  "hpi": 513.93,
+  "fed_funds_rate": 3.63,
+  "ohio_active_listings": 20316.0
 }

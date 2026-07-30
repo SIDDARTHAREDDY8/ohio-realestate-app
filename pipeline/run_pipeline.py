@@ -184,6 +184,8 @@ def export_frontend_data():
                 ("mortgage_rate_30yr_fixed",  "mortgage_rate_30yr"),
                 ("ohio_unemployment_rate",    "unemployment_rate"),
                 ("ohio_hpi_all_transactions", "hpi"),
+                ("federal_funds_rate",        "fed_funds_rate"),
+                ("ohio_active_listing_count", "ohio_active_listings"),
             ]:
                 row = conn.execute("""
                     SELECT value FROM ohio_re.fact_economic_indicators
