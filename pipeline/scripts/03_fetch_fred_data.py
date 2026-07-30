@@ -5,11 +5,13 @@ Fetches Ohio housing price indices, mortgage rates, and economic indicators
 from the Federal Reserve Bank of St. Louis FRED via direct CSV download
 """
 
-import requests
-import pandas as pd
-import time
 import io
+import sys
+import time
 from pathlib import Path
+
+import pandas as pd
+import requests
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RAW_DIR = BASE_DIR / "data" / "raw"
@@ -25,7 +27,7 @@ FRED_SERIES = [
     ("MEDLISPRIOH",    "ohio_median_listing_price",       "housing_price"),
     ("ACTLISCOUOH",    "ohio_active_listing_count",       "inventory"),
     ("NEWLISCOUOH",    "ohio_new_listing_count",          "inventory"),
-    ("DAYSOH",         "ohio_median_days_on_market",      "market_speed"),
+    # DAYSOH (median days on market) was retired by FRED — returns 404
     # Metro HPI (FHFA All-Transactions)
     ("ATNHPIUS18140Q", "cleveland_hpi_fhfa",             "metro_hpi"),
     ("ATNHPIUS17460Q", "columbus_hpi_fhfa",              "metro_hpi"),
@@ -103,6 +105,14 @@ def main():
         time.sleep(0.2)
 
     print(f"\nSuccessful: {ok} | Failed: {fail}")
+
+    if not all_dfs:
+        if (RAW_DIR / "fred_ohio_long.parquet").exists():
+            # Downstream steps can proceed on the previous snapshot.
+            print("WARNING: every FRED series failed — keeping existing snapshot. "
+                  "Data will be stale until the endpoint recovers.")
+            return
+        sys.exit("ERROR: every FRED series failed and no existing snapshot exists.")
 
     if all_dfs:
         long_df = pd.concat(all_dfs, ignore_index=True)

@@ -5,10 +5,12 @@ Fetches housing metrics for all 88 Ohio counties from US Census Bureau ACS 5-Yea
 Data: Median home value, median gross rent, tenure (owner/renter), housing units, vacancy
 """
 
-import requests
-import pandas as pd
+import sys
 import time
 from pathlib import Path
+
+import pandas as pd
+import requests
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RAW_DIR = BASE_DIR / "data" / "raw"
@@ -153,9 +155,9 @@ def main():
             print(f"  Got {len(df)} counties for {year}")
         time.sleep(0.5)  # Rate limiting
 
+    out_path = RAW_DIR / "census_acs_county_ohio.parquet"
     if county_frames:
         county_df = pd.concat(county_frames, ignore_index=True)
-        out_path = RAW_DIR / "census_acs_county_ohio.parquet"
         county_df.to_parquet(out_path, index=False)
         print(f"\nSaved county data: {out_path}")
         print(f"Shape: {county_df.shape}")
@@ -164,6 +166,14 @@ def main():
 
         # Also save as CSV for inspection
         county_df.to_csv(RAW_DIR / "census_acs_county_ohio.csv", index=False)
+    elif out_path.exists():
+        # Downstream steps can proceed on the previous snapshot; a silent
+        # empty fetch here is what used to crash model training later.
+        print("\nWARNING: Census fetch returned no data — keeping existing snapshot "
+              f"({out_path.name}). Data will be stale until the API recovers.")
+    else:
+        sys.exit("ERROR: Census fetch returned no data and no existing snapshot exists. "
+                 "Cannot continue — the warehouse would be empty.")
 
     # Fetch ZIP code data for latest year only (large dataset)
     print("\nFetching ZIP code data (2023)...")

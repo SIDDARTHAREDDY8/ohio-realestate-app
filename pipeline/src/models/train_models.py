@@ -34,10 +34,16 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_features():
-    """Load processed feature files."""
+    """Load processed feature files, failing with a clear message if the
+    upstream fetch/ETL steps produced no data (e.g. Census API outage)."""
     county_df = pd.read_parquet(PROCESSED_DIR / "county_features.parquet")
     ts_df = pd.read_parquet(PROCESSED_DIR / "timeseries_features.parquet")
     heat_df = pd.read_parquet(PROCESSED_DIR / "market_heat_index.parquet")
+    if county_df.empty or county_df["median_home_value"].dropna().empty:
+        raise SystemExit(
+            "ERROR: county feature matrix is empty — the Census fetch or ETL step "
+            "produced no data. Fix the upstream step before training."
+        )
     return county_df, ts_df, heat_df
 
 
