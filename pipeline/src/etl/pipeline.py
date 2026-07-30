@@ -6,7 +6,6 @@ Implements star schema with fact and dimension tables
 
 import duckdb
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import json
 import logging
@@ -25,32 +24,76 @@ for d in [PROCESSED_DIR, WAREHOUSE_DIR]:
 
 DB_PATH = WAREHOUSE_DIR / "ohio_realestate.duckdb"
 
-# Ohio county FIPS to metro area mapping
+# Ohio county FIPS to metro area (MSA) mapping — Ohio counties of each
+# metropolitan statistical area. Counties not listed are non-metro.
 COUNTY_TO_METRO = {
+    # Cleveland-Elyria: Cuyahoga, Geauga, Lake, Lorain, Medina
     "39035": "Cleveland-Elyria", "39055": "Cleveland-Elyria", "39085": "Cleveland-Elyria",
     "39093": "Cleveland-Elyria", "39103": "Cleveland-Elyria",
-    "39049": "Columbus", "39041": "Columbus", "39045": "Columbus",
+    # Columbus: Franklin, Delaware, Fairfield, Hocking, Licking, Madison,
+    #           Morrow, Perry, Pickaway, Union
+    "39049": "Columbus", "39041": "Columbus", "39045": "Columbus", "39073": "Columbus",
     "39089": "Columbus", "39097": "Columbus", "39117": "Columbus", "39127": "Columbus",
-    "39061": "Cincinnati", "39025": "Cincinnati", "39165": "Cincinnati",
+    "39129": "Columbus", "39159": "Columbus",
+    # Cincinnati (Ohio portion): Hamilton, Butler, Clermont, Warren, Brown
+    "39061": "Cincinnati", "39017": "Cincinnati", "39025": "Cincinnati",
+    "39165": "Cincinnati", "39015": "Cincinnati",
+    # Dayton-Kettering: Montgomery, Greene, Miami
     "39113": "Dayton", "39057": "Dayton", "39109": "Dayton",
+    # Akron: Summit, Portage
     "39153": "Akron", "39133": "Akron",
-    "39095": "Toledo", "39051": "Toledo",
+    # Toledo: Lucas, Wood, Fulton, Ottawa
+    "39095": "Toledo", "39173": "Toledo", "39051": "Toledo", "39123": "Toledo",
+    # Youngstown-Warren: Mahoning, Trumbull
     "39155": "Youngstown-Warren", "39099": "Youngstown-Warren",
-    "39007": "Ashtabula", "39009": "Athens", "39013": "Belmont",
+    # Canton-Massillon: Stark, Carroll
     "39019": "Canton-Massillon", "39151": "Canton-Massillon",
-    "39173": "Weirton-Steubenville",
+    # Single-county MSAs
+    "39023": "Springfield",           # Clark
+    "39003": "Lima",                  # Allen
+    "39139": "Mansfield",             # Richland
+    "39081": "Weirton-Steubenville",  # Jefferson
+    "39013": "Wheeling",              # Belmont (WV-OH MSA)
+    "39087": "Huntington-Ashland",    # Lawrence (WV-KY-OH MSA)
 }
 
+# Five-region partition covering all 88 Ohio counties
 OHIO_REGIONS = {
-    "Northeast": ["39035", "39055", "39085", "39093", "39103", "39153", "39133",
-                  "39155", "39099", "39007", "39019", "39151"],
-    "Central": ["39049", "39041", "39045", "39089", "39097", "39117", "39127",
-                "39047", "39083"],
-    "Southwest": ["39061", "39025", "39165", "39113", "39057", "39109"],
-    "Northwest": ["39095", "39051", "39003", "39011", "39039", "39069"],
-    "Southeast": ["39009", "39013", "39053", "39073", "39079", "39111",
-                  "39141", "39163", "39167"],
+    "Northeast": [
+        "39005", "39007", "39019", "39029", "39035", "39055", "39075", "39085",
+        "39093", "39099", "39103", "39133", "39139", "39151", "39153", "39155",
+        "39157", "39169",
+    ],  # Ashland, Ashtabula, Carroll, Columbiana, Cuyahoga, Geauga, Holmes, Lake,
+        # Lorain, Mahoning, Medina, Portage, Richland, Stark, Summit, Trumbull,
+        # Tuscarawas, Wayne
+    "Northwest": [
+        "39003", "39011", "39033", "39039", "39043", "39051", "39063", "39065",
+        "39069", "39077", "39095", "39107", "39123", "39125", "39137", "39143",
+        "39147", "39161", "39171", "39173", "39175",
+    ],  # Allen, Auglaize, Crawford, Defiance, Erie, Fulton, Hancock, Hardin,
+        # Henry, Huron, Lucas, Mercer, Ottawa, Paulding, Putnam, Sandusky,
+        # Seneca, Van Wert, Williams, Wood, Wyandot
+    "Central": [
+        "39041", "39045", "39047", "39049", "39083", "39089", "39091", "39097",
+        "39101", "39117", "39127", "39129", "39159",
+    ],  # Delaware, Fairfield, Fayette, Franklin, Knox, Licking, Logan, Madison,
+        # Marion, Morrow, Perry, Pickaway, Union
+    "Southwest": [
+        "39001", "39015", "39017", "39021", "39023", "39025", "39027", "39037",
+        "39057", "39061", "39071", "39109", "39113", "39135", "39149", "39165",
+    ],  # Adams, Brown, Butler, Champaign, Clark, Clermont, Clinton, Darke,
+        # Greene, Hamilton, Highland, Miami, Montgomery, Preble, Shelby, Warren
+    "Southeast": [
+        "39009", "39013", "39031", "39053", "39059", "39067", "39073", "39079",
+        "39081", "39087", "39105", "39111", "39115", "39119", "39121", "39131",
+        "39141", "39145", "39163", "39167",
+    ],  # Athens, Belmont, Coshocton, Gallia, Guernsey, Harrison, Hocking,
+        # Jackson, Jefferson, Lawrence, Meigs, Monroe, Morgan, Muskingum,
+        # Noble, Pike, Ross, Scioto, Vinton, Washington
 }
+
+assert sum(len(v) for v in OHIO_REGIONS.values()) == 88, "Region map must cover all 88 counties"
+assert len({f for v in OHIO_REGIONS.values() for f in v}) == 88, "Region map has duplicate FIPS"
 
 # Reverse lookup
 FIPS_TO_REGION = {fips: region for region, fips_list in OHIO_REGIONS.items() for fips in fips_list}
@@ -391,7 +434,6 @@ class OhioRealEstateETL:
             "price_drops", "off_market_in_two_weeks",
             "parent_metro_region",
         ]
-        ordered_cols = [c for c in schema_cols if c in fact_df.columns]
         # Add missing columns as NULL
         for c in schema_cols:
             if c not in fact_df.columns:

@@ -13,10 +13,29 @@ import { ExternalLink } from "lucide-react";
 import predictions from "@/data/county_value_predictions.json";
 import clusters from "@/data/market_clusters.json";
 import affordability from "@/data/affordability_predictions.json";
+import modelMetrics from "@/data/model_metrics.json";
 
 const predData = predictions as any[];
 const clusterData = clusters as any[];
 const affordData = affordability as any[];
+
+// All metrics come from the last training run (model_metrics.json, written by
+// the pipeline) — never hardcode them here or they drift on retrain.
+const hvMetrics = (modelMetrics as any).home_value ?? {};
+const clusterMetrics = (modelMetrics as any).clusters ?? {};
+const affordMetrics = (modelMetrics as any).affordability ?? {};
+const bestModelName: string = hvMetrics.best_model ?? "XGBoost";
+const testYear: number | undefined = hvMetrics.test_year;
+const bestR2: number | undefined = (hvMetrics.metrics ?? []).find(
+  (m: any) => m.model === bestModelName
+)?.r2;
+
+const MODEL_DISPLAY: Record<string, string> = {
+  XGBoost: "XGBoost",
+  GradientBoosting: "Gradient Boosting",
+  RandomForest: "Random Forest",
+  Ridge: "Ridge Regression",
+};
 
 const C1 = "oklch(0.38 0.12 250)";
 const C2 = "oklch(0.52 0.14 220)";
@@ -43,29 +62,57 @@ function SectionHeader({ title, source, note }: { title: string; source?: string
   );
 }
 
-const FEATURE_IMPORTANCE = [
-  { feature: "Prior Year Home Value (lag1)", importance: 47.1, category: "lag" },
-  { feature: "Median Household Income", importance: 22.4, category: "economic" },
-  { feature: "Median Gross Rent", importance: 6.8, category: "housing" },
-  { feature: "Median Year Built", importance: 4.4, category: "housing" },
-  { feature: "2-Year Lag Home Value", importance: 3.6, category: "lag" },
-  { feature: "Price-to-Income Ratio", importance: 3.5, category: "derived" },
-  { feature: "Housing Stock Age", importance: 2.8, category: "derived" },
-  { feature: "Median Rooms", importance: 2.4, category: "housing" },
-  { feature: "Persons per Unit", importance: 1.4, category: "derived" },
-  { feature: "Vacancy Rate", importance: 1.0, category: "housing" },
-];
+// Display names + chart categories for raw pipeline feature names
+const FEATURE_META: Record<string, { label: string; category: string }> = {
+  median_home_value_lag1: { label: "Prior Year Home Value (lag1)", category: "lag" },
+  median_home_value_lag2: { label: "2-Year Lag Home Value", category: "lag" },
+  median_household_income_lag1: { label: "Prior Year Income (lag1)", category: "lag" },
+  median_household_income: { label: "Median Household Income", category: "economic" },
+  total_population: { label: "Total Population", category: "economic" },
+  median_gross_rent: { label: "Median Gross Rent", category: "housing" },
+  median_year_structure_built: { label: "Median Year Built", category: "housing" },
+  median_rooms: { label: "Median Rooms", category: "housing" },
+  vacancy_rate: { label: "Vacancy Rate", category: "housing" },
+  homeownership_rate: { label: "Homeownership Rate", category: "housing" },
+  renter_rate: { label: "Renter Rate", category: "housing" },
+  price_to_income_ratio: { label: "Price-to-Income Ratio", category: "derived" },
+  housing_stock_age: { label: "Housing Stock Age", category: "derived" },
+  persons_per_unit: { label: "Persons per Unit", category: "derived" },
+  is_metro_int: { label: "Metro County", category: "derived" },
+  year: { label: "Year", category: "derived" },
+};
 
-const MODEL_COMPARISON = [
-  { model: "XGBoost", r2: 0.9856, mae: 3389, mape: 2.04, cv_r2: "0.977±0.015", color: C1 },
-  { model: "Gradient Boosting", r2: 0.9909, mae: 2799, mape: 1.68, cv_r2: "—", color: C3 },
-  { model: "Random Forest", r2: 0.9626, mae: 4484, mape: 2.56, cv_r2: "—", color: C2 },
-  { model: "Ridge Regression", r2: 0.9784, mae: 5530, mape: 3.80, cv_r2: "—", color: C5 },
-];
+const FEATURE_IMPORTANCE = (() => {
+  const raw: { feature: string; importance: number }[] = hvMetrics.feature_importance ?? [];
+  const total = raw.reduce((s, f) => s + f.importance, 0) || 1;
+  return raw.slice(0, 10).map(f => ({
+    feature: FEATURE_META[f.feature]?.label ?? f.feature,
+    importance: (f.importance / total) * 100,
+    category: FEATURE_META[f.feature]?.category ?? "derived",
+  }));
+})();
+
+const MODEL_COLOR: Record<string, string> = {
+  XGBoost: C1, GradientBoosting: C3, RandomForest: C2, Ridge: C5,
+};
+
+const MODEL_COMPARISON = ((hvMetrics.metrics ?? []) as any[]).map(m => ({
+  model: MODEL_DISPLAY[m.model] ?? m.model,
+  r2: m.r2,
+  mae: m.mae,
+  mape: m.mape,
+  // Expanding-window CV is run with the XGBoost configuration
+  cv_r2: m.model === "XGBoost" && hvMetrics.cv_r2_mean != null
+    ? `${hvMetrics.cv_r2_mean.toFixed(3)}±${(hvMetrics.cv_r2_std ?? 0).toFixed(3)}`
+    : "—",
+  color: MODEL_COLOR[m.model] ?? C1,
+}));
 
 const CLUSTER_COLORS: Record<string, string> = {
   "Affluent Suburban": C1,
   "Urban Premium": C2,
+  "Urban Core": "oklch(0.50 0.18 300)",
+  "Suburban Growth": C2,
   "Stable Mid-Tier": C3,
   "Transitional Market": C5,
   "Value Market": "oklch(0.65 0.005 240)",
@@ -117,16 +164,20 @@ export default function MLInsights() {
 
       {/* Model comparison table */}
       <div className="panel">
-        <SectionHeader title="Model Comparison — Home Value Prediction" source="XGBoost 2.0 + scikit-learn 1.4" note="Target: median_home_value · 440 county-year observations · 80/20 train/test split" />
+        <SectionHeader
+          title="Model Comparison — Home Value Prediction"
+          source="XGBoost 2.0 + scikit-learn 1.4"
+          note={`Target: median_home_value · ${hvMetrics.n_samples ?? "—"} county-year observations · temporal holdout (train < ${testYear ?? "latest"}, test = ${testYear ?? "latest"})`}
+        />
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
                 <th>Model</th>
-                <th>R² (test)</th>
+                <th>R² (holdout)</th>
                 <th>MAE</th>
                 <th>MAPE</th>
-                <th>5-Fold CV R²</th>
+                <th>Expanding-Window CV R²</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -139,7 +190,7 @@ export default function MLInsights() {
                   <td className="mono">{m.mape.toFixed(2)}%</td>
                   <td className="mono">{m.cv_r2}</td>
                   <td>
-                    {m.model === "XGBoost" ? (
+                    {m.model === (MODEL_DISPLAY[bestModelName] ?? bestModelName) ? (
                       <span className="source-tag" style={{ color: C3, fontWeight: 600 }}>● DEPLOYED</span>
                     ) : (
                       <span className="source-tag">baseline</span>
@@ -151,15 +202,22 @@ export default function MLInsights() {
           </table>
         </div>
         <div className="px-3 py-2 source-tag" style={{ borderTop: "1px solid var(--border)" }}>
-          XGBoost selected for production (inference speed). Gradient Boosting achieves marginally better test metrics but slower prediction.
-          CV R² = 0.977 ± 0.015 confirms model generalizes well across counties and years.
+          {MODEL_DISPLAY[bestModelName] ?? bestModelName} deployed — best R² on the held-out year
+          {testYear ? ` (${testYear})` : ""}. Validation is strictly temporal: the model never sees the
+          year it predicts, so lagged-target features cannot leak the answer.
+          {hvMetrics.cv_r2_mean != null &&
+            ` Expanding-window CV R² = ${hvMetrics.cv_r2_mean.toFixed(3)} ± ${(hvMetrics.cv_r2_std ?? 0).toFixed(3)}.`}
         </div>
       </div>
 
       {/* Scatter + Feature importance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="panel">
-          <SectionHeader title="Actual vs. Predicted — 88 Ohio Counties (2023)" source="XGBoost" note="Perfect prediction = diagonal line" />
+          <SectionHeader
+            title={`Actual vs. Predicted — 88 Ohio Counties${testYear ? ` (${testYear})` : ""}`}
+            source={MODEL_DISPLAY[bestModelName] ?? bestModelName}
+            note="Out-of-sample · perfect prediction = diagonal line"
+          />
           <div className="p-3">
             <ResponsiveContainer width="100%" height={240}>
               <ScatterChart margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -185,14 +243,18 @@ export default function MLInsights() {
               </ScatterChart>
             </ResponsiveContainer>
             <div className="source-tag mt-1">
-              Outliers above diagonal = model underestimates (Delaware, Warren counties).
-              R²=0.986 means 98.6% of variance in home values explained by the 21 features.
+              Points below the diagonal = model underestimates.
+              {bestR2 != null &&
+                ` R²=${bestR2.toFixed(3)} on the held-out year — ${(bestR2 * 100).toFixed(1)}% of variance explained out-of-sample.`}
             </div>
           </div>
         </div>
 
         <div className="panel">
-          <SectionHeader title="Feature Importance (XGBoost Gain)" source="xgboost.get_score(importance_type='gain')" />
+          <SectionHeader
+            title={`Feature Importance (${MODEL_DISPLAY[bestModelName] ?? bestModelName})`}
+            source="model_metrics.json · last training run"
+          />
           <div className="p-3">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart
@@ -224,23 +286,30 @@ export default function MLInsights() {
       {/* Clusters + Affordability */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="panel">
-          <SectionHeader title="K-Means Market Clusters (k=5)" source="scikit-learn KMeans" note="9 features · StandardScaler · 20 inits · Elbow: k=2–8" />
+          <SectionHeader
+            title={`K-Means Market Clusters${clusterMetrics.k ? ` (k=${clusterMetrics.k})` : ""}`}
+            source="scikit-learn KMeans"
+            note={`9 features · StandardScaler · ${clusterMetrics.k_selection ?? "silhouette-selected k"}`}
+          />
           <div className="px-3 py-2 flex flex-wrap gap-1.5" style={{ borderBottom: "1px solid var(--border)" }}>
-            {Object.entries(CLUSTER_COLORS).map(([label, color]) => (
-              <button
-                key={label}
-                onClick={() => setActiveCluster(activeCluster === label ? null : label)}
-                className="text-xs px-2 py-0.5 rounded transition-all"
-                style={{
-                  border: `1px solid ${color}`,
-                  color: activeCluster === label ? "white" : color,
-                  background: activeCluster === label ? color : "transparent",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}
-              >
-                {label}
-              </button>
-            ))}
+            {clusterCounts.map(({ name: label }) => {
+              const color = CLUSTER_COLORS[label] ?? "oklch(0.65 0.005 240)";
+              return (
+                <button
+                  key={label}
+                  onClick={() => setActiveCluster(activeCluster === label ? null : label)}
+                  className="text-xs px-2 py-0.5 rounded transition-all"
+                  style={{
+                    border: `1px solid ${color}`,
+                    color: activeCluster === label ? "white" : color,
+                    background: activeCluster === label ? color : "transparent",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
           <div className="p-3">
             <ResponsiveContainer width="100%" height={180}>
@@ -262,12 +331,23 @@ export default function MLInsights() {
                 <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="source-tag mt-1">76 of 88 counties = Value Market. Ohio is predominantly affordable vs. coastal markets.</div>
+            <div className="source-tag mt-1">
+              {(() => {
+                const top = [...clusterCounts].sort((a, b) => b.value - a.value)[0];
+                return top
+                  ? `${top.value} of 88 counties = ${top.name}. Ohio is predominantly affordable vs. coastal markets.`
+                  : "Cluster distribution across 88 counties.";
+              })()}
+            </div>
           </div>
         </div>
 
         <div className="panel">
-          <SectionHeader title="Affordability Risk Classification" source="Random Forest Classifier" note="4-class · 11 features · stratified 80/20 split · acc=0.89+" />
+          <SectionHeader
+            title="Affordability Risk Classification"
+            source="Random Forest Classifier"
+            note={`${(affordMetrics.classes ?? []).length || 4}-class · temporal holdout${affordMetrics.accuracy != null ? ` · acc=${affordMetrics.accuracy.toFixed(2)}` : ""}`}
+          />
           <div className="p-3">
             <div className="grid grid-cols-2 gap-3 mb-3">
               {affordCounts.map(a => (
@@ -280,8 +360,9 @@ export default function MLInsights() {
               ))}
             </div>
             <div className="source-tag">
-              Affordability Index = (5 × median income) / median home value × 100.
-              Low Risk ≥ 100 · Moderate 80–99 · High Risk 60–79 · Severe &lt; 60.
+              Risk classes = quartiles of the rent-to-income ratio (annual rent ÷ income), edges fit on
+              training years only. Rent and income are excluded from the features so the model can't
+              reconstruct its own label.
             </div>
           </div>
         </div>
@@ -290,7 +371,7 @@ export default function MLInsights() {
       {/* Full predictions table */}
       <div className="panel overflow-hidden">
         <SectionHeader
-          title="XGBoost Predictions — All 88 Ohio Counties (2023)"
+          title={`${MODEL_DISPLAY[bestModelName] ?? bestModelName} Predictions — All 88 Ohio Counties${testYear ? ` (${testYear}, out-of-sample)` : ""}`}
           source="pipeline/src/models/train_models.py"
           note="Sorted by actual home value descending"
         />

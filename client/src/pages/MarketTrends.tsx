@@ -12,6 +12,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink } from "lucide-react";
 import redfin from "@/data/redfin_county_market.json";
+import pipelineMeta from "@/data/pipeline_meta.json";
+
+const meta = pipelineMeta as any;
 
 const redfinData = redfin as any[];
 
@@ -157,9 +160,9 @@ export default function MarketTrends() {
           </div>
           {[
             { label: "COUNTIES", val: "88" },
-            { label: "DATE RANGE", val: "Jan 2012 – Mar 2026" },
+            { label: "DATE RANGE", val: meta.market_date_range ?? "Monthly series" },
             { label: "FREQUENCY", val: "Monthly" },
-            { label: "RECORDS", val: "48,172" },
+            { label: "RECORDS", val: (meta.market_rows ?? 0).toLocaleString("en-US") },
             { label: "PROPERTY TYPE", val: "All Residential" },
           ].map(s => (
             <div key={s.label} className="flex flex-col">

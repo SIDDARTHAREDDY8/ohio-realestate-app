@@ -7,7 +7,7 @@ Downloads Redfin's public housing market data and filters for Ohio
 import requests
 import pandas as pd
 import gzip
-import io
+import tempfile
 import os
 from pathlib import Path
 
@@ -25,34 +25,39 @@ DATASETS = {
 
 
 def download_and_filter_ohio(name: str, url: str) -> pd.DataFrame:
-    """Stream-download a gzipped TSV from Redfin S3 and filter for Ohio."""
+    """Stream-download a gzipped TSV from Redfin S3 to disk and filter for Ohio."""
     print(f"\nDownloading {name} data...")
+    tmp_path = None
     try:
         resp = requests.get(url, stream=True, timeout=300)
         resp.raise_for_status()
         size_mb = int(resp.headers.get("Content-Length", 0)) / 1e6
         print(f"  Size: {size_mb:.0f} MB - downloading...")
 
-        # Read in chunks to avoid memory issues
-        chunks = []
-        for chunk in resp.iter_content(chunk_size=10*1024*1024):  # 10MB chunks
-            chunks.append(chunk)
-        print(f"  Downloaded. Decompressing...")
+        # Stream to a temp file so the full (multi-GB) download never sits in memory
+        with tempfile.NamedTemporaryFile(suffix=".tsv.gz", delete=False) as tmp:
+            tmp_path = tmp.name
+            for chunk in resp.iter_content(chunk_size=10 * 1024 * 1024):
+                tmp.write(chunk)
+        print("  Downloaded. Filtering for Ohio in chunks...")
 
-        compressed = io.BytesIO(b"".join(chunks))
-        with gzip.open(compressed, "rt", encoding="utf-8", errors="replace") as f:
-            df = pd.read_csv(f, sep="\t", low_memory=False)
+        # Read in chunks, keeping only Ohio rows
+        ohio_parts = []
+        total_rows = 0
+        with gzip.open(tmp_path, "rt", encoding="utf-8", errors="replace") as f:
+            for chunk_df in pd.read_csv(f, sep="\t", low_memory=False, chunksize=250_000):
+                total_rows += len(chunk_df)
+                if "state_code" in chunk_df.columns:
+                    part = chunk_df[chunk_df["state_code"] == "OH"]
+                elif "state" in chunk_df.columns:
+                    part = chunk_df[chunk_df["state"].str.upper().isin(["OH", "OHIO"])]
+                else:
+                    part = chunk_df
+                if not part.empty:
+                    ohio_parts.append(part)
 
-        print(f"  Total rows: {len(df):,}")
-
-        # Filter for Ohio
-        if "state_code" in df.columns:
-            ohio_df = df[df["state_code"] == "OH"].copy()
-        elif "state" in df.columns:
-            ohio_df = df[df["state"].str.upper().isin(["OH", "OHIO"])].copy()
-        else:
-            ohio_df = df.copy()
-
+        ohio_df = pd.concat(ohio_parts, ignore_index=True) if ohio_parts else pd.DataFrame()
+        print(f"  Total rows: {total_rows:,}")
         print(f"  Ohio rows: {len(ohio_df):,}")
 
         # Parse dates
@@ -67,6 +72,9 @@ def download_and_filter_ohio(name: str, url: str) -> pd.DataFrame:
         import traceback
         traceback.print_exc()
         return pd.DataFrame()
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 def main():

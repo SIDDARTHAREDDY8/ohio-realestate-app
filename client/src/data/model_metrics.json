@@ -1,0 +1,214 @@
+{
+  "home_value": {
+    "model_name": "County Home Value Predictor",
+    "best_model": "GradientBoosting",
+    "validation": "temporal holdout (train < 2023, test = 2023); expanding-window CV",
+    "test_year": 2023,
+    "metrics": [
+      {
+        "model": "XGBoost",
+        "mae": 4527.19,
+        "rmse": 7492.37,
+        "r2": 0.9786,
+        "mape": 2.18
+      },
+      {
+        "model": "GradientBoosting",
+        "mae": 3901.9,
+        "rmse": 5960.7,
+        "r2": 0.9864,
+        "mape": 2.0
+      },
+      {
+        "model": "RandomForest",
+        "mae": 5339.18,
+        "rmse": 10372.27,
+        "r2": 0.959,
+        "mape": 2.62
+      },
+      {
+        "model": "Ridge",
+        "mae": 4983.73,
+        "rmse": 6836.64,
+        "r2": 0.9822,
+        "mape": 2.68
+      }
+    ],
+    "cv_r2_mean": 0.9590820687035281,
+    "cv_r2_std": 0.022507649413044704,
+    "n_features": 21,
+    "n_samples": 440,
+    "n_train": 352,
+    "n_test": 88,
+    "feature_importance": [
+      {
+        "feature": "median_household_income",
+        "importance": 0.5102498217849665
+      },
+      {
+        "feature": "median_home_value_lag1",
+        "importance": 0.31808215761213676
+      },
+      {
+        "feature": "price_to_income_ratio",
+        "importance": 0.09427785481532039
+      },
+      {
+        "feature": "median_gross_rent",
+        "importance": 0.024554884035753358
+      },
+      {
+        "feature": "median_household_income_lag1",
+        "importance": 0.015844256951891164
+      },
+      {
+        "feature": "housing_stock_age",
+        "importance": 0.007119892129838884
+      },
+      {
+        "feature": "persons_per_unit",
+        "importance": 0.00709876307229576
+      },
+      {
+        "feature": "median_year_structure_built",
+        "importance": 0.005711088936264564
+      },
+      {
+        "feature": "median_rooms",
+        "importance": 0.004126561938030024
+      },
+      {
+        "feature": "total_population",
+        "importance": 0.0031809741346241188
+      },
+      {
+        "feature": "renter_rate",
+        "importance": 0.003020122392547758
+      },
+      {
+        "feature": "median_home_value_lag2",
+        "importance": 0.0020450507658931836
+      },
+      {
+        "feature": "homeownership_rate",
+        "importance": 0.0014288783150834842
+      },
+      {
+        "feature": "vacancy_rate",
+        "importance": 0.0014106729420800945
+      },
+      {
+        "feature": "year",
+        "importance": 0.0010834712540763974
+      }
+    ]
+  },
+  "hpi_forecast": {
+    "model_name": "Ohio HPI Prophet Forecaster",
+    "test_mae": 7.3003,
+    "test_rmse": 8.4996,
+    "test_r2": 0.6032,
+    "n_train": 37,
+    "n_test": 8,
+    "regressors": [
+      "mortgage_rate_30yr_fixed",
+      "ohio_unemployment_rate",
+      "federal_funds_rate"
+    ],
+    "forecast_periods": 8
+  },
+  "clusters": {
+    "k": 3,
+    "k_selection": "max silhouette score over k=3..8",
+    "cluster_labels": {
+      "2": "Value Market",
+      "0": "Affluent Suburban",
+      "1": "Urban Core"
+    },
+    "cluster_counts": {
+      "Value Market": 58,
+      "Affluent Suburban": 22,
+      "Urban Core": 8
+    },
+    "inertias": {
+      "3": 502.443012441581,
+      "4": 433.4221553214204,
+      "5": 369.2640502544814,
+      "6": 318.6870498341557,
+      "7": 290.8278399376824,
+      "8": 265.64762704029727
+    },
+    "silhouette_scores": {
+      "3": 0.2519,
+      "4": 0.1924,
+      "5": 0.1996,
+      "6": 0.2013,
+      "7": 0.1951,
+      "8": 0.2082
+    }
+  },
+  "affordability": {
+    "model_name": "Affordability Risk Classifier",
+    "accuracy": 0.75,
+    "validation": "temporal holdout (train < 2023, test = 2023); rent and income excluded from features (they define the target)",
+    "test_year": 2023,
+    "classification_report": {
+      "High Risk": {
+        "precision": 0.7058823529411765,
+        "recall": 0.5454545454545454,
+        "f1-score": 0.6153846153846154,
+        "support": 22.0
+      },
+      "Low Risk": {
+        "precision": 0.8333333333333334,
+        "recall": 0.9259259259259259,
+        "f1-score": 0.8771929824561403,
+        "support": 27.0
+      },
+      "Moderate": {
+        "precision": 0.64,
+        "recall": 0.7272727272727273,
+        "f1-score": 0.6808510638297872,
+        "support": 22.0
+      },
+      "Severe": {
+        "precision": 0.8125,
+        "recall": 0.7647058823529411,
+        "f1-score": 0.7878787878787878,
+        "support": 17.0
+      },
+      "accuracy": 0.75,
+      "macro avg": {
+        "precision": 0.7479289215686274,
+        "recall": 0.740839770251535,
+        "f1-score": 0.7403268623873327,
+        "support": 88.0
+      },
+      "weighted avg": {
+        "precision": 0.7491126336898396,
+        "recall": 0.75,
+        "f1-score": 0.7454015325337732,
+        "support": 88.0
+      }
+    },
+    "classes": [
+      "High Risk",
+      "Low Risk",
+      "Moderate",
+      "Severe"
+    ],
+    "features": [
+      "median_home_value",
+      "homeownership_rate",
+      "vacancy_rate",
+      "renter_rate",
+      "total_population",
+      "home_value_yoy",
+      "housing_stock_age",
+      "median_rooms",
+      "persons_per_unit",
+      "is_metro_int",
+      "year"
+    ]
+  }
+}

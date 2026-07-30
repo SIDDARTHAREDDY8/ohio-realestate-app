@@ -16,13 +16,11 @@ import logging
 import warnings
 warnings.filterwarnings("ignore")
 
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.cluster import KMeans
-from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 import xgboost as xgb
 
@@ -95,9 +93,15 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
     logger.info(f"  Training samples: {len(X)}")
     logger.info(f"  Features: {len(available_features)}")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    # Temporal holdout: the feature set includes lagged values of the target,
+    # so a random split would place the same county's adjacent years in both
+    # train and test and leak the answer. Hold out the most recent year instead.
+    test_year = int(df_model["year"].max())
+    train_mask = (df_model["year"] < test_year).to_numpy()
+    X_train, X_test = X[train_mask], X[~train_mask]
+    y_train, y_test = y[train_mask], y[~train_mask]
+    logger.info(f"  Temporal split: train < {test_year} ({len(X_train)} rows), "
+                f"test = {test_year} ({len(X_test)} rows)")
 
     # Impute missing values
     imputer = SimpleImputer(strategy="median")
@@ -106,8 +110,7 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
 
     all_metrics = []
 
-    # --- XGBoost ---
-    xgb_model = xgb.XGBRegressor(
+    xgb_params = dict(
         n_estimators=300,
         max_depth=6,
         learning_rate=0.05,
@@ -119,9 +122,10 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
         random_state=42,
         n_jobs=-1,
     )
-    xgb_model.fit(X_train_imp, y_train,
-                  eval_set=[(X_test_imp, y_test)],
-                  verbose=False)
+
+    # --- XGBoost ---
+    xgb_model = xgb.XGBRegressor(**xgb_params)
+    xgb_model.fit(X_train_imp, y_train, verbose=False)
     all_metrics.append(evaluate_model(xgb_model, X_test_imp, y_test, "XGBoost"))
 
     # --- Gradient Boosting ---
@@ -147,8 +151,13 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
     ridge_model.fit(X_train_scaled, y_train)
     all_metrics.append(evaluate_model(ridge_model, X_test_scaled, y_test, "Ridge"))
 
-    # Best model = XGBoost
-    best_model = xgb_model
+    # Best model = highest R² on the held-out year (among tree models,
+    # which share the imputed-feature pipeline used for predictions below)
+    tree_models = {"XGBoost": xgb_model, "GradientBoosting": gb_model, "RandomForest": rf_model}
+    tree_metrics = [m for m in all_metrics if m["model"] in tree_models]
+    best_name = max(tree_metrics, key=lambda m: m["r2"])["model"]
+    best_model = tree_models[best_name]
+    logger.info(f"\n  Best model on {test_year} holdout: {best_name}")
 
     # Feature importance
     feat_importance = pd.DataFrame({
@@ -157,23 +166,33 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
     }).sort_values("importance", ascending=False)
     logger.info(f"\n  Top 10 features:\n{feat_importance.head(10).to_string()}")
 
-    # Cross-validation on best model
-    cv = KFold(n_splits=5, shuffle=True, random_state=42)
-    X_all_imp = imputer.transform(X)
-    cv_scores = cross_val_score(xgb_model, X_all_imp, y, cv=cv, scoring="r2")
-    logger.info(f"\n  5-Fold CV R²: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
+    # Expanding-window cross-validation: train on all years before each
+    # validation year. No shuffling, so lagged-target features never leak.
+    cv_scores = []
+    cv_years = sorted(int(y_) for y_ in df_model["year"].unique())[2:]
+    for val_year in cv_years:
+        tr = (df_model["year"] < val_year).to_numpy()
+        va = (df_model["year"] == val_year).to_numpy()
+        if tr.sum() == 0 or va.sum() == 0:
+            continue
+        cv_imputer = SimpleImputer(strategy="median")
+        cv_model = xgb.XGBRegressor(**xgb_params)
+        cv_model.fit(cv_imputer.fit_transform(X[tr]), y[tr], verbose=False)
+        cv_scores.append(r2_score(y[va], cv_model.predict(cv_imputer.transform(X[va]))))
+    cv_scores = np.array(cv_scores)
+    logger.info(f"\n  Expanding-window CV R² (years {cv_years}): "
+                f"{cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-    # Generate predictions for all counties (2023)
-    df_2023 = county_df[county_df["year"] == 2023].copy()
-    X_2023 = df_2023[available_features]
-    X_2023_imp = imputer.transform(X_2023)
-    df_2023["predicted_home_value"] = best_model.predict(X_2023_imp)
-    df_2023["prediction_error_pct"] = (
-        (df_2023["predicted_home_value"] - df_2023["median_home_value"]) /
-        df_2023["median_home_value"] * 100
+    # Out-of-sample predictions for the held-out year — the model was trained
+    # only on earlier years, so these are genuine forecasts, not refits.
+    df_hold = df_model.loc[~train_mask].copy()
+    df_hold["predicted_home_value"] = best_model.predict(X_test_imp)
+    df_hold["prediction_error_pct"] = (
+        (df_hold["predicted_home_value"] - df_hold["median_home_value"]) /
+        df_hold["median_home_value"] * 100
     ).round(2)
 
-    predictions_df = df_2023[["county_fips", "county_name", "median_home_value",
+    predictions_df = df_hold[["county_fips", "county_name", "median_home_value",
                                "predicted_home_value", "prediction_error_pct"]].copy()
     predictions_df.to_parquet(PROCESSED_DIR / "county_value_predictions.parquet", index=False)
     predictions_df.to_csv(PROCESSED_DIR / "county_value_predictions.csv", index=False)
@@ -195,12 +214,17 @@ def train_home_value_predictor(county_df: pd.DataFrame) -> dict:
     with open(MODELS_DIR / "home_value_metrics.json", "w") as f:
         json.dump({
             "model_name": "County Home Value Predictor",
-            "best_model": "XGBoost",
+            "best_model": best_name,
+            "validation": f"temporal holdout (train < {test_year}, test = {test_year}); "
+                          "expanding-window CV",
+            "test_year": test_year,
             "metrics": all_metrics,
             "cv_r2_mean": float(cv_scores.mean()),
             "cv_r2_std": float(cv_scores.std()),
             "n_features": len(available_features),
             "n_samples": len(X),
+            "n_train": int(train_mask.sum()),
+            "n_test": int((~train_mask).sum()),
             "feature_importance": feat_importance.head(15).to_dict(orient="records"),
         }, f, indent=2)
 
@@ -299,10 +323,10 @@ def train_hpi_forecaster(ts_df: pd.DataFrame) -> dict:
     future = model_full.make_future_dataframe(periods=8, freq="QS")
     for reg in regressors:
         if reg in hpi_df.columns:
-            last_val = hpi_df[reg].iloc[-1]
-            future[reg] = future["ds"].map(
-                lambda d: hpi_df.set_index("ds")[reg].get(d, last_val)
-            ).fillna(last_val)
+            series = hpi_df.set_index("ds")[reg]
+            # Known dates get their observed value; future dates carry the last
+            # observation forward (a simplifying assumption for the forecast).
+            future[reg] = future["ds"].map(series).fillna(series.iloc[-1])
 
     forecast = model_full.predict(future)
 
@@ -358,16 +382,21 @@ def train_market_clusters(county_df: pd.DataFrame) -> pd.DataFrame:
     X_imp = imputer.fit_transform(X_cluster)
     X_scaled = scaler.fit_transform(X_imp)
 
-    # Find optimal k using elbow method
+    # Find optimal k: silhouette score over k=3..8 (k>=3 so the archetype
+    # labels below stay meaningful; a hardcoded k would ignore the data)
+    from sklearn.metrics import silhouette_score
     inertias = []
-    k_range = range(2, 9)
+    sil_scores = {}
+    k_range = range(3, 9)
     for k in k_range:
         km = KMeans(n_clusters=k, random_state=42, n_init=10)
-        km.fit(X_scaled)
+        labels = km.fit_predict(X_scaled)
         inertias.append(km.inertia_)
+        sil_scores[k] = float(silhouette_score(X_scaled, labels))
 
-    # Use k=5 (good balance for Ohio's market diversity)
-    k_optimal = 5
+    k_optimal = max(sil_scores, key=sil_scores.get)
+    logger.info(f"  Silhouette scores: {{{', '.join(f'{k}: {v:.3f}' for k, v in sil_scores.items())}}}")
+    logger.info(f"  Selected k = {k_optimal}")
     kmeans = KMeans(n_clusters=k_optimal, random_state=42, n_init=20)
     df_2023["cluster"] = kmeans.fit_predict(X_scaled)
 
@@ -375,22 +404,34 @@ def train_market_clusters(county_df: pd.DataFrame) -> pd.DataFrame:
     cluster_stats = df_2023.groupby("cluster")[available].mean()
     logger.info(f"\n  Cluster statistics:\n{cluster_stats.round(0).to_string()}")
 
-    # Assign descriptive labels
-    cluster_labels = {}
-    for c in range(k_optimal):
-        stats = cluster_stats.loc[c]
-        if stats.get("median_home_value", 0) > 250000:
-            if stats.get("homeownership_rate", 0) > 75:
-                cluster_labels[c] = "Affluent Suburban"
-            else:
-                cluster_labels[c] = "Urban Premium"
-        elif stats.get("median_home_value", 0) > 180000:
-            if stats.get("vacancy_rate", 0) > 10:
-                cluster_labels[c] = "Transitional Market"
-            else:
-                cluster_labels[c] = "Stable Mid-Tier"
+    # Assign descriptive labels: rank clusters by average home value, with an
+    # override for renter-heavy (urban-core) clusters. Guaranteed unique so
+    # k distinct clusters never collapse into fewer labels.
+    cluster_labels: dict = {}
+    used: set = set()
+    urban = [c for c in cluster_stats.index
+             if cluster_stats.loc[c].get("homeownership_rate", 100) < 65]
+    non_urban = [c for c in cluster_stats.index if c not in urban]
+    value_order = cluster_stats.loc[non_urban, "median_home_value"].sort_values().index.tolist()
+    middle_names = ["Stable Mid-Tier", "Suburban Growth", "Transitional Market",
+                    "Rising Market", "Established Market", "Upper Mid-Tier"]
+    for i, c in enumerate(value_order):
+        if i == 0:
+            label = "Value Market"
+        elif i == len(value_order) - 1:
+            label = "Affluent Suburban"
         else:
-            cluster_labels[c] = "Value Market"
+            label = middle_names[(i - 1) % len(middle_names)]
+        while label in used:
+            label = f"{label} II"
+        used.add(label)
+        cluster_labels[c] = label
+    for c in urban:
+        label = "Urban Core"
+        while label in used:
+            label = f"{label} II"
+        used.add(label)
+        cluster_labels[c] = label
 
     df_2023["cluster_label"] = df_2023["cluster"].map(cluster_labels)
     logger.info(f"\n  Cluster distribution:\n{df_2023['cluster_label'].value_counts().to_string()}")
@@ -411,14 +452,17 @@ def train_market_clusters(county_df: pd.DataFrame) -> pd.DataFrame:
             "cluster_labels": cluster_labels,
             "k": k_optimal,
             "inertias": {k: v for k, v in zip(k_range, inertias)},
+            "silhouette_scores": sil_scores,
         }, f)
 
     with open(MODELS_DIR / "cluster_metrics.json", "w") as f:
         json.dump({
             "k": k_optimal,
+            "k_selection": "max silhouette score over k=3..8",
             "cluster_labels": cluster_labels,
             "cluster_counts": df_2023["cluster_label"].value_counts().to_dict(),
             "inertias": {str(k): float(v) for k, v in zip(k_range, inertias)},
+            "silhouette_scores": {str(k): round(v, 4) for k, v in sil_scores.items()},
         }, f, indent=2)
 
     return cluster_out
@@ -438,20 +482,29 @@ def train_affordability_classifier(county_df: pd.DataFrame) -> dict:
 
     df = county_df.dropna(subset=["affordability_ratio", "median_home_value"]).copy()
 
-    # Create target: affordability risk
+    # Create target: relative affordability risk. Quartile edges are computed
+    # from TRAINING years only (fixed textbook bins like 25/30/35 leave nearly
+    # every Ohio county in one class, which makes the problem degenerate).
+    max_year = int(df["year"].max())
+    train_ratios = df.loc[df["year"] < max_year, "affordability_ratio"]
+    edges = train_ratios.quantile([0, 0.25, 0.5, 0.75, 1.0]).to_numpy().copy()
+    edges[0], edges[-1] = -np.inf, np.inf
     df["affordability_risk"] = pd.cut(
         df["affordability_ratio"],
-        bins=[0, 25, 30, 35, 100],
+        bins=edges,
         labels=["Low Risk", "Moderate", "High Risk", "Severe"],
-        include_lowest=True
     )
     df = df.dropna(subset=["affordability_risk"])
 
+    # NOTE: median_gross_rent and median_household_income are deliberately
+    # excluded — the target (affordability_ratio = rent*12/income) is defined
+    # by them, so including them would make the classifier reconstruct its
+    # own label instead of learning market structure.
     feature_cols = [
-        "median_home_value", "median_household_income", "median_gross_rent",
-        "homeownership_rate", "vacancy_rate", "total_population",
-        "price_to_income_ratio", "home_value_yoy", "income_yoy",
-        "is_metro_int", "year",
+        "median_home_value",
+        "homeownership_rate", "vacancy_rate", "renter_rate", "total_population",
+        "home_value_yoy", "housing_stock_age", "median_rooms",
+        "persons_per_unit", "is_metro_int", "year",
     ]
     available = [c for c in feature_cols if c in df.columns]
 
@@ -461,9 +514,14 @@ def train_affordability_classifier(county_df: pd.DataFrame) -> dict:
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y_enc, test_size=0.2, random_state=42, stratify=y_enc
-    )
+    # Temporal holdout, consistent with the home-value model: counties repeat
+    # across years, so a random split would leak near-duplicate rows.
+    test_year = int(df["year"].max())
+    train_mask = (df["year"] < test_year).to_numpy()
+    X_train, X_test = X[train_mask], X[~train_mask]
+    y_train, y_test = y_enc[train_mask], y_enc[~train_mask]
+    logger.info(f"  Temporal split: train < {test_year} ({len(X_train)} rows), "
+                f"test = {test_year} ({len(X_test)} rows)")
 
     imputer = SimpleImputer(strategy="median")
     X_train_imp = imputer.fit_transform(X_train)
@@ -476,15 +534,19 @@ def train_affordability_classifier(county_df: pd.DataFrame) -> dict:
 
     y_pred = clf.predict(X_test_imp)
     acc = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, target_names=le.classes_, output_dict=True)
+    label_ids = list(range(len(le.classes_)))
+    report = classification_report(y_test, y_pred, labels=label_ids,
+                                   target_names=le.classes_, output_dict=True,
+                                   zero_division=0)
 
-    logger.info(f"  Accuracy: {acc:.4f}")
-    logger.info(f"  Classification Report:\n{classification_report(y_test, y_pred, target_names=le.classes_)}")
+    logger.info(f"  Accuracy ({test_year} holdout): {acc:.4f}")
+    logger.info(f"  Classification Report:\n"
+                f"{classification_report(y_test, y_pred, labels=label_ids, target_names=le.classes_, zero_division=0)}")
 
-    # Predict for all 2023 counties
-    df_2023 = county_df[county_df["year"] == 2023].copy()
+    # Predict for all counties in the held-out year using the trained imputer
+    df_2023 = county_df[county_df["year"] == test_year].copy()
     X_2023 = df_2023[available]
-    X_2023_imp = imputer.transform(SimpleImputer(strategy="median").fit_transform(X_2023))
+    X_2023_imp = imputer.transform(X_2023)
     df_2023["affordability_risk_pred"] = le.inverse_transform(clf.predict(X_2023_imp))
     proba = clf.predict_proba(X_2023_imp)
     for i, cls in enumerate(le.classes_):
@@ -503,8 +565,12 @@ def train_affordability_classifier(county_df: pd.DataFrame) -> dict:
     metrics = {
         "model_name": "Affordability Risk Classifier",
         "accuracy": round(float(acc), 4),
+        "validation": f"temporal holdout (train < {test_year}, test = {test_year}); "
+                      "rent and income excluded from features (they define the target)",
+        "test_year": test_year,
         "classification_report": report,
         "classes": list(le.classes_),
+        "features": available,
     }
     with open(MODELS_DIR / "affordability_metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
@@ -523,16 +589,16 @@ def main():
     county_df, ts_df, heat_df = load_features()
 
     # Model 1: Home Value Predictor
-    hv_artifacts = train_home_value_predictor(county_df)
+    train_home_value_predictor(county_df)
 
     # Model 2: HPI Forecaster
-    hpi_artifacts = train_hpi_forecaster(ts_df)
+    train_hpi_forecaster(ts_df)
 
     # Model 3: Market Clusters
-    cluster_df = train_market_clusters(county_df)
+    train_market_clusters(county_df)
 
     # Model 4: Affordability Classifier
-    afford_metrics = train_affordability_classifier(county_df)
+    train_affordability_classifier(county_df)
 
     # Summary
     logger.info("\n" + "=" * 60)

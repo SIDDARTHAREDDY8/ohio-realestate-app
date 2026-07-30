@@ -40,8 +40,8 @@ The Ohio Real Estate Market Intelligence Platform is an end-to-end data science 
 | Source | Data | Records |
 |--------|------|---------|
 | **US Census Bureau ACS 5-Year** | Median home value, rent, income, tenure, vacancy — all 88 Ohio counties, 2019–2023 | 440 county-year records |
-| **Redfin Market Tracker** | Monthly sale price, DOM, inventory, sale-to-list ratio | 48,172 county-month records |
-| **FRED — St. Louis Fed** | Ohio HPI, mortgage rates, unemployment, employment, CPI, consumer sentiment | 2,934 observations · 21 series |
+| **Redfin Market Tracker** | Monthly sale price, DOM, inventory, sale-to-list ratio | ~48,000 county-month records |
+| **FRED — St. Louis Fed** | Ohio HPI, mortgage rates, unemployment, employment, CPI, consumer sentiment | ~3,000 observations · 21 series |
 
 All data is fetched from public APIs — no paid keys required.
 
@@ -49,13 +49,16 @@ All data is fetched from public APIs — no paid keys required.
 
 ## Machine Learning Models
 
-### 1. County Home Value Predictor (XGBoost)
+### 1. County Home Value Predictor (Gradient-Boosted Trees)
 Predicts median home value for any Ohio county given economic and demographic features.
+Validated on a **strict temporal holdout** — trained on 2019–2022, evaluated on 2023,
+which the model never sees (a shuffled split would leak lagged-target features).
 
-- **R² = 0.9856** · MAE = $3,389 · MAPE = 2.04%
-- 5-Fold CV R² = 0.977 ± 0.015
+- **R² = 0.986 on the held-out year** · MAE ≈ $3,900 · MAPE ≈ 2.0%
+- Expanding-window CV R² = 0.959 ± 0.023
 - 21 features including lag values, income, rent, housing stock age
-- Top feature: prior-year home value (47% importance)
+- Best of XGBoost / GradientBoosting / RandomForest, selected on the holdout
+- Live metrics in `client/src/data/model_metrics.json`, refreshed on every training run
 
 ### 2. Ohio HPI Forecaster (Facebook Prophet)
 Time-series forecast of Ohio's FHFA House Price Index, 8 quarters ahead.
@@ -63,17 +66,20 @@ Time-series forecast of Ohio's FHFA House Price Index, 8 quarters ahead.
 - 3 external regressors: 30-yr mortgage rate, unemployment, federal funds rate
 - Multiplicative seasonality · 95% confidence interval
 
-### 3. Market Cluster Analysis (K-Means, k=5)
-Identifies 5 market archetypes across Ohio's 88 counties.
+### 3. Market Cluster Analysis (K-Means)
+Identifies market archetypes across Ohio's 88 counties; k is chosen by
+silhouette score (currently k=3).
 
-- Clusters: Affluent Suburban, Stable Mid-Tier, Value Market
-- 9 features · StandardScaler · elbow method (k=2–8 tested)
+- Clusters: Value Market, Affluent Suburban, Urban Core
+- 9 features · StandardScaler · silhouette-selected k (3–8 tested)
 
 ### 4. Affordability Risk Classifier (Random Forest)
 Classifies counties into 4 affordability risk tiers.
 
-- Accuracy = 0.89+ · 4 classes: Low Risk / Moderate / High Risk / Severe
-- Affordability Index = (5 × median income) / median home value × 100
+- Accuracy = 0.75 on a held-out year (4 balanced classes, 25% baseline)
+- Classes = training-year quartiles of the rent-to-income ratio
+- Rent and income are excluded from the features — they define the target,
+  so including them would let the model reconstruct its own label
 
 ---
 

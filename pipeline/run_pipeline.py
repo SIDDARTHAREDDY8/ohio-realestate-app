@@ -42,24 +42,6 @@ FRONTEND_DATA = REPO_ROOT / "client" / "src" / "data"
 for d in [RAW_DIR, PROCESSED, WAREHOUSE, FRONTEND_DATA]:
     d.mkdir(parents=True, exist_ok=True)
 
-# Local development fallback: if pipeline/data is empty, use the original ohio-realestate data
-_ORIG_DATA = REPO_ROOT.parent / "ohio-realestate" / "data"
-if not any(PROCESSED.glob("*.parquet")) and (_ORIG_DATA / "processed").exists():
-    import shutil
-    for f in (_ORIG_DATA / "processed").glob("*.parquet"):
-        dest = PROCESSED / f.name
-        if not dest.exists():
-            shutil.copy2(f, dest)
-    for f in (_ORIG_DATA / "raw").glob("*.parquet"):
-        dest = RAW_DIR / f.name
-        if not dest.exists():
-            shutil.copy2(f, dest)
-    # Copy DuckDB warehouse
-    orig_db = _ORIG_DATA / "warehouse" / "ohio_realestate.duckdb"
-    dest_db = WAREHOUSE / "ohio_realestate.duckdb"
-    if orig_db.exists() and not dest_db.exists():
-        shutil.copy2(orig_db, dest_db)
-
 # ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -89,21 +71,6 @@ def run_step(name: str, script: Path, env: dict | None = None) -> bool:
     else:
         logger.error(f"✗ {name} FAILED (exit {result.returncode}) after {elapsed:.1f}s")
         return False
-
-
-def patch_paths(script_path: Path):
-    """
-    Rewrite BASE_DIR in pipeline scripts to point to pipeline/data/
-    so they work from any working directory in the repo.
-    """
-    content = script_path.read_text()
-    # Replace the standard BASE_DIR resolution with an absolute path
-    old = "BASE_DIR = Path(__file__).resolve().parent.parent"
-    new = f"BASE_DIR = Path(r'{PIPELINE}')"
-    if old in content:
-        patched = content.replace(old, new)
-        script_path.write_text(patched)
-        logger.info(f"  Patched BASE_DIR in {script_path.name}")
 
 
 def export_frontend_data():
@@ -187,6 +154,7 @@ def export_frontend_data():
 
     # KPIs
     db_path = WAREHOUSE / "ohio_realestate.duckdb"
+    warehouse_counts: dict = {}
     if db_path.exists():
         conn = duckdb.connect(str(db_path), read_only=True)
         kpis: dict = {}
@@ -217,23 +185,57 @@ def export_frontend_data():
                 ("ohio_unemployment_rate",    "unemployment_rate"),
                 ("ohio_hpi_all_transactions", "hpi"),
             ]:
-                row = conn.execute(f"""
+                row = conn.execute("""
                     SELECT value FROM ohio_re.fact_economic_indicators
-                    WHERE friendly_name = '{series}'
+                    WHERE friendly_name = ?
                     ORDER BY date DESC LIMIT 1
-                """).fetchone()
+                """, [series]).fetchone()
                 kpis[name] = round(float(row[0]), 2) if row else None
+
+            # Warehouse row counts + coverage, surfaced in the About page via
+            # pipeline_meta.json so displayed numbers can never go stale.
+            for key, tbl in [
+                ("census_rows", "fact_census_housing"),
+                ("market_rows", "fact_market_monthly"),
+                ("economic_rows", "fact_economic_indicators"),
+            ]:
+                row = conn.execute(f"SELECT COUNT(*) FROM ohio_re.{tbl}").fetchone()
+                warehouse_counts[key] = int(row[0]) if row else None
+            row = conn.execute("""
+                SELECT MIN(period_begin), MAX(period_begin)
+                FROM ohio_re.fact_market_monthly
+            """).fetchone()
+            if row and row[0]:
+                warehouse_counts["market_date_range"] = f"{row[0]:%b %Y} – {row[1]:%b %Y}"
         finally:
             conn.close()
 
         (FRONTEND_DATA / "kpis.json").write_text(json.dumps(kpis, indent=2))
         logger.info("  kpis.json: updated")
 
+    # Consolidated model metrics for the ML Insights page — keeps the UI in
+    # sync with whatever the last training run actually produced.
+    models_meta_dir = WAREHOUSE / "models"
+    model_metrics: dict = {}
+    for key, fname in [
+        ("home_value", "home_value_metrics.json"),
+        ("hpi_forecast", "hpi_forecast_metrics.json"),
+        ("clusters", "cluster_metrics.json"),
+        ("affordability", "affordability_metrics.json"),
+    ]:
+        p = models_meta_dir / fname
+        if p.exists():
+            model_metrics[key] = json.loads(p.read_text())
+    if model_metrics:
+        (FRONTEND_DATA / "model_metrics.json").write_text(json.dumps(model_metrics, indent=2))
+        logger.info("  model_metrics.json: updated")
+
     # Write pipeline metadata visible in the UI
     meta = {
         "last_refresh":      datetime.now(timezone.utc).isoformat(),
         "data_sources":      ["US Census Bureau ACS", "Redfin Market Tracker", "FRED"],
         "counties_covered":  88,
+        **warehouse_counts,
     }
     (FRONTEND_DATA / "pipeline_meta.json").write_text(json.dumps(meta, indent=2))
     logger.info("  pipeline_meta.json: updated")
@@ -256,18 +258,6 @@ def main():
     if args.export_only:
         export_frontend_data()
         return
-
-    # Patch BASE_DIR in all scripts so they write to pipeline/data/
-    for script in [
-        SCRIPTS_DIR / "01_fetch_census_data.py",
-        SCRIPTS_DIR / "02_fetch_redfin_data.py",
-        SCRIPTS_DIR / "03_fetch_fred_data.py",
-        ETL_DIR / "pipeline.py",
-        ETL_DIR / "feature_engineering.py",
-        MODELS_DIR / "train_models.py",
-    ]:
-        if script.exists():
-            patch_paths(script)
 
     steps = []
 

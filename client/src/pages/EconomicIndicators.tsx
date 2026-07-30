@@ -15,6 +15,11 @@ import economic from "@/data/economic_indicators.json";
 
 const econData = economic as any[];
 
+// Header stats computed from the shipped data rather than hardcoded
+const SERIES_COUNT = new Set(econData.map(d => d.friendly_name)).size;
+const ECON_YEARS = econData.map(d => d.date?.substring(0, 4)).filter(Boolean).sort();
+const ECON_RANGE = ECON_YEARS.length ? `${ECON_YEARS[0]}–${ECON_YEARS[ECON_YEARS.length - 1]}` : "—";
+
 const C1 = "oklch(0.38 0.12 250)";
 const C2 = "oklch(0.52 0.14 220)";
 const C3 = "oklch(0.48 0.16 145)";
@@ -126,7 +131,12 @@ export default function EconomicIndicators() {
 
       {/* Series inventory table */}
       <div className="panel">
-        <SectionHeader title="FRED Economic Series Inventory" source="FRED · St. Louis Fed" url="https://fred.stlouisfed.org/" note="21 series · 2,934 observations · 2015–2026" />
+        <SectionHeader
+          title="FRED Economic Series Inventory"
+          source="FRED · St. Louis Fed"
+          url="https://fred.stlouisfed.org/"
+          note={`${SERIES_COUNT} series · ${econData.length.toLocaleString("en-US")} observations · ${ECON_RANGE}`}
+        />
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>

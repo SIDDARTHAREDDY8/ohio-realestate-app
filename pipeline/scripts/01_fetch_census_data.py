@@ -7,9 +7,7 @@ Data: Median home value, median gross rent, tenure (owner/renter), housing units
 
 import requests
 import pandas as pd
-import json
 import time
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent

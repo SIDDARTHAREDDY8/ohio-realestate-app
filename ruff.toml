@@ -1,0 +1,10 @@
+# Ruff configuration for the Python pipeline.
+# Pins the rule set so CI results are deterministic across ruff versions.
+line-length = 100
+
+[lint]
+# Pyflakes (F) catches real bugs (unused imports, undefined names, shadowing);
+# E4/E7/E9 are the pycodestyle error classes. B023 catches loop-variable
+# capture bugs in closures.
+select = ["E4", "E7", "E9", "F", "B023"]
+ignore = ["E402"]

@@ -6,7 +6,6 @@ Produces: county-level features, time-series features, affordability metrics
 
 import duckdb
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import logging
 
@@ -57,7 +56,7 @@ def build_county_features(conn: duckdb.DuckDBPyConnection) -> pd.DataFrame:
         h.median_home_value / NULLIF(h.median_household_income, 0) AS price_to_income_ratio,
         h.median_gross_rent * 12 / NULLIF(h.median_home_value, 0) * 100 AS gross_rent_yield,
         h.total_population / NULLIF(h.total_housing_units, 0) AS persons_per_unit,
-        (2024 - h.median_year_structure_built) AS housing_stock_age,
+        (h.year - h.median_year_structure_built) AS housing_stock_age,
         h.owner_occupied / NULLIF(h.total_housing_units, 0) * 100 AS owner_rate_pct
     FROM ohio_re.fact_census_housing h
     JOIN ohio_re.dim_county c ON h.county_fips = c.county_fips

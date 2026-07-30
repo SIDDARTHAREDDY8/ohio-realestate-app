@@ -39,6 +39,14 @@ function pct(n: number | null | undefined, dec = 1) {
 type SortKey = "county_name" | "median_home_value_2023" | "median_rent_2023" | "homeownership_rate_2023" | "home_value_5yr_change" | "affordability_index" | "median_income_2023";
 const REGIONS = ["All Regions", "Central", "Northeast", "Southwest", "Northwest", "Southeast"];
 
+// Statewide maxima for radar normalization, derived from the data so the
+// scale stays correct when the pipeline refreshes.
+const maxOf = (key: string) =>
+  Math.max(...counties.map(c => c[key] ?? 0).filter((v: number) => Number.isFinite(v)), 1);
+const MAX_HOME_VALUE = maxOf("median_home_value_2023");
+const MAX_RENT = maxOf("median_rent_2023");
+const MAX_INCOME = maxOf("median_income_2023");
+
 const COLS: { key: SortKey; label: string; width?: string }[] = [
   { key: "county_name", label: "County" },
   { key: "median_home_value_2023", label: "Home Value" },
@@ -84,12 +92,12 @@ export default function CountyExplorer() {
   const selectedCluster = selected ? clusterData.find(c => c.county_fips === selected.county_fips) : null;
 
   const radarData = selected ? [
-    { metric: "Value", value: Math.min(100, (selected.median_home_value_2023 / 420000) * 100) },
-    { metric: "Rent", value: Math.min(100, (selected.median_rent_2023 / 1500) * 100) },
+    { metric: "Value", value: Math.min(100, (selected.median_home_value_2023 / MAX_HOME_VALUE) * 100) },
+    { metric: "Rent", value: Math.min(100, (selected.median_rent_2023 / MAX_RENT) * 100) },
     { metric: "Ownership", value: selected.homeownership_rate_2023 ?? 0 },
     { metric: "Appreciation", value: Math.min(100, Math.max(0, (selected.home_value_5yr_change ?? 0) + 10) * 2) },
     { metric: "Affordability", value: Math.min(100, selected.affordability_index ?? 50) },
-    { metric: "Income", value: Math.min(100, (selected.median_income_2023 / 100000) * 100) },
+    { metric: "Income", value: Math.min(100, (selected.median_income_2023 / MAX_INCOME) * 100) },
   ] : [];
 
   return (

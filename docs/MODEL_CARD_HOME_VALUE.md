@@ -3,8 +3,8 @@
 ## Model Details
 - **Developer:** SIDDARTHAREDDY8 Data Science Team
 - **Model Date:** July 2026
-- **Model Type:** Gradient Boosted Decision Trees (XGBoost)
-- **Version:** 1.0.0
+- **Model Type:** Gradient Boosted Decision Trees (best of XGBoost / GradientBoosting / RandomForest, selected on a held-out year — currently Gradient Boosting)
+- **Version:** 1.1.0
 - **License:** MIT
 
 ## Intended Use
@@ -19,16 +19,23 @@
 - **Temporal Factors:** Year, lagged home values (1-year and 2-year lags).
 
 ## Metrics
-- **Mean Absolute Error (MAE):** ~$3,389
-- **Root Mean Squared Error (RMSE):** ~$4,500
-- **R² Score:** 0.9856
-- **Mean Absolute Percentage Error (MAPE):** 2.04%
-- **5-Fold Cross-Validation R²:** 0.977 ± 0.015
+All metrics are computed on a **temporal holdout** — the model is trained on
+2019–2022 and evaluated on 2023, which it never sees during training. This
+matters because the feature set includes lagged values of the target; a random
+train/test split would leak adjacent years of the same county and inflate
+scores. Current values (auto-refreshed in `client/src/data/model_metrics.json`
+on every training run):
+
+- **Mean Absolute Error (MAE):** ~$3,902
+- **R² Score (2023 holdout):** 0.9864
+- **Mean Absolute Percentage Error (MAPE):** ~2.0%
+- **Expanding-Window CV R² (2021–2023):** 0.959 ± 0.023
 
 ## Training Data
 - **Source:** US Census Bureau ACS 5-Year Estimates (2019-2023).
 - **Scope:** All 88 Ohio counties.
 - **Pre-processing:** Median imputation for missing values, standard scaling for linear benchmarks, and regional one-hot encoding.
+- **Validation protocol:** Temporal holdout (train < 2023, test = 2023) plus expanding-window cross-validation — no shuffled splits, so lagged-target features cannot leak.
 
 ## Quantitative Analyses
 - **Feature Importance:** The most significant predictor is the prior-year median home value (approx. 47% importance), followed by median household income and housing stock age.

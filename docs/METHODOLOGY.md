@@ -24,7 +24,7 @@ The pipeline is orchestrated using Python and follows a modular ETL (Extract, Tr
 ## Model Governance & Validation
 To ensure corporate-grade reliability, all models undergo rigorous validation:
 
-*   **Cross-Validation:** K-Fold cross-validation (k=5) is used to assess model stability and prevent overfitting.
+*   **Temporal Validation:** Models with lagged-target features are validated on a strict temporal holdout (train on earlier years, test on the latest year) plus expanding-window cross-validation. Shuffled K-Fold is deliberately avoided — with county panels and lag features it leaks adjacent years of the same county and inflates scores.
 *   **Backtesting:** The HPI Forecaster is backtested against historical 8-quarter windows to verify prediction accuracy.
 *   **Drift Monitoring:** Pipeline metadata tracks record counts and distribution shifts to alert on potential data quality issues.
 

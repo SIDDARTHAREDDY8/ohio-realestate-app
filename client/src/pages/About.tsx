@@ -5,6 +5,22 @@
  */
 
 import { ExternalLink } from "lucide-react";
+import pipelineMeta from "@/data/pipeline_meta.json";
+import modelMetrics from "@/data/model_metrics.json";
+
+// Live numbers from the last pipeline/training run — displayed stats can
+// never drift from what the pipeline actually produced.
+const meta = pipelineMeta as any;
+const mm = modelMetrics as any;
+const hv = mm.home_value ?? {};
+const hpi = mm.hpi_forecast ?? {};
+const cl = mm.clusters ?? {};
+const af = mm.affordability ?? {};
+const hvBest = (hv.metrics ?? []).find((m: any) => m.model === hv.best_model) ?? {};
+const fmtNum = (n: number | undefined | null) => (n != null ? n.toLocaleString("en-US") : "—");
+const topCluster = Object.entries(cl.cluster_counts ?? {}).sort(
+  (a: any, b: any) => b[1] - a[1]
+)[0] as [string, number] | undefined;
 
 function SectionHeader({ title, source, url }: { title: string; source?: string; url?: string }) {
   return (
@@ -31,7 +47,7 @@ const DATA_SOURCES = [
     tables: ["B25077 (median home value)", "B25064 (gross rent)", "B25003 (tenure)", "B25001 (housing units)", "B25002 (vacancy)", "B19013 (median income)", "B01003 (population)", "B25035 (year built)", "B25018 (rooms)"],
     coverage: "All 88 Ohio counties · 2019, 2020, 2021, 2022, 2023",
     limitations: "5-year rolling estimates — not point-in-time. 2020 data affected by COVID collection disruptions. Margin of error not shown in this dashboard.",
-    records: "440 county-year records",
+    records: `${fmtNum(meta.census_rows)} county-year records`,
     license: "Public domain (US government data)",
   },
   {
@@ -39,9 +55,9 @@ const DATA_SOURCES = [
     url: "https://www.redfin.com/news/data-center/",
     api: "https://redfin-public-data.s3.us-west-2.amazonaws.com/redfin_market_tracker/county_market_tracker.tsv000.gz",
     tables: ["median_sale_price", "median_list_price", "median_ppsf", "homes_sold", "inventory", "months_of_supply", "median_dom", "avg_sale_to_list", "sold_above_list", "price_drops"],
-    coverage: "All 88 Ohio counties · Jan 2012 – Mar 2026 · Monthly",
+    coverage: `All 88 Ohio counties · ${meta.market_date_range ?? "monthly"} · Monthly`,
     limitations: "Redfin coverage varies by county — rural counties may have sparse data. Metrics represent only homes listed/sold through Redfin-tracked MLSs.",
-    records: "48,172 county-month records",
+    records: `${fmtNum(meta.market_rows)} county-month records`,
     license: "Redfin Data Terms of Use — free for non-commercial use with attribution",
   },
   {
@@ -51,7 +67,7 @@ const DATA_SOURCES = [
     tables: ["OHSTHPI (Ohio HPI)", "MEDLISPRIOH (listing price)", "ACTLISCOUOH (active listings)", "MORTGAGE30US (30-yr rate)", "FEDFUNDS (fed funds)", "OHUR (unemployment)", "OHNA (employment)", "ATNHPIUS18140Q (Cleveland HPI)", "ATNHPIUS17460Q (Columbus HPI)", "ATNHPIUS17140Q (Cincinnati HPI)", "CSUSHPINSA (Case-Shiller)", "CPIAUCSL (CPI)", "UMCSENT (sentiment)"],
     coverage: "2015–2026 · Monthly/Quarterly depending on series",
     limitations: "FRED JSON API requires a free API key for browser-side calls. Without a key, the dashboard uses cached data from the last pipeline run.",
-    records: "2,934 observations across 21 series",
+    records: `${fmtNum(meta.economic_rows)} observations across 21 series`,
     license: "Public domain (Federal Reserve data)",
   },
 ];
@@ -59,63 +75,80 @@ const DATA_SOURCES = [
 const SCHEMA = [
   { table: "ohio_re.dim_county", type: "Dimension", rows: "88", key: "county_fips (CHAR 5)", desc: "County name, FIPS code, metro area, region classification" },
   { table: "ohio_re.dim_date", type: "Dimension", rows: "4,748", key: "date_key (INT)", desc: "Date dimension 2015–2027 with year/quarter/month/week attributes" },
-  { table: "ohio_re.fact_census_housing", type: "Fact", rows: "440", key: "county_fips + year", desc: "Annual ACS housing metrics per county with derived rates and YoY changes" },
-  { table: "ohio_re.fact_market_monthly", type: "Fact", rows: "48,172", key: "county_fips + period_begin + property_type", desc: "Monthly Redfin market metrics per county" },
-  { table: "ohio_re.fact_economic_indicators", type: "Fact", rows: "2,934", key: "series_id + date", desc: "FRED economic time series in long format" },
+  { table: "ohio_re.fact_census_housing", type: "Fact", rows: fmtNum(meta.census_rows), key: "county_fips + year", desc: "Annual ACS housing metrics per county with derived rates and YoY changes" },
+  { table: "ohio_re.fact_market_monthly", type: "Fact", rows: fmtNum(meta.market_rows), key: "county_fips + period_begin + property_type", desc: "Monthly Redfin market metrics per county" },
+  { table: "ohio_re.fact_economic_indicators", type: "Fact", rows: fmtNum(meta.economic_rows), key: "series_id + date", desc: "FRED economic time series in long format" },
   { table: "ohio_re.mart_county_summary", type: "Mart", rows: "88", key: "county_fips", desc: "Pre-aggregated county summary with 5-year changes and affordability metrics" },
 ];
 
+// Populated from model_metrics.json (last training run) — see the constants
+// at the top of this file. Numbers here update automatically on retrain.
 const ML_MODELS = [
   {
     name: "County Home Value Predictor",
-    algorithm: "XGBoost Regressor",
+    algorithm: `${hv.best_model ?? "Gradient-boosted"} Regressor`,
     framework: "xgboost 2.0 + scikit-learn 1.4",
     target: "median_home_value (continuous)",
-    features: "21 features: income, rent, lag values, housing stock age, vacancy rate, region dummies",
-    train_test: "80/20 random split · 5-fold cross-validation",
-    metrics: "R²=0.9856 · MAE=$3,389 · MAPE=2.04% · CV R²=0.977±0.015",
-    notes: "Lag features (prior year home value) account for 47% of feature importance. Model is retrained monthly on latest ACS data.",
+    features: `${hv.n_features ?? 21} features: income, rent, lag values, housing stock age, vacancy rate, region dummies`,
+    train_test: hv.validation ?? "temporal holdout (train on earlier years, test on the latest)",
+    metrics: [
+      hvBest.r2 != null ? `R²=${hvBest.r2}` : null,
+      hvBest.mae != null ? `MAE=$${Math.round(hvBest.mae).toLocaleString("en-US")}` : null,
+      hvBest.mape != null ? `MAPE=${hvBest.mape}%` : null,
+      hv.cv_r2_mean != null ? `CV R²=${hv.cv_r2_mean.toFixed(3)}±${(hv.cv_r2_std ?? 0).toFixed(3)}` : null,
+    ].filter(Boolean).join(" · ") || "See model_metrics.json",
+    notes: "Validation is strictly temporal — lagged-target features never leak the answer. Retrained monthly on latest ACS data; the leaderboard picks the best model on the held-out year.",
   },
   {
     name: "Ohio HPI Forecaster",
     algorithm: "Facebook Prophet",
     framework: "prophet 1.1.5",
     target: "OHSTHPI quarterly index value",
-    features: "3 external regressors: mortgage_rate_30yr_fixed, ohio_unemployment_rate, federal_funds_rate",
-    train_test: "36 quarters train / 8 quarters test",
-    metrics: "Multiplicative seasonality · changepoint_prior_scale=0.1 · 95% confidence interval",
-    notes: "Quarterly data limits forecast accuracy. The 2022–2023 rate shock created a structural break that challenges the model.",
+    features: `${(hpi.regressors ?? []).length || 3} external regressors: mortgage_rate_30yr_fixed, ohio_unemployment_rate, federal_funds_rate`,
+    train_test: hpi.n_train != null ? `${hpi.n_train} quarters train / ${hpi.n_test} quarters test` : "holdout on final 8 quarters",
+    metrics: [
+      hpi.test_r2 != null ? `Test R²=${hpi.test_r2}` : null,
+      hpi.test_mae != null ? `Test MAE=${hpi.test_mae}` : null,
+      "Multiplicative seasonality · 95% confidence interval",
+    ].filter(Boolean).join(" · "),
+    notes: "Quarterly data limits forecast accuracy. The 2022–2023 rate shock created a structural break that challenges the model. Future regressor values are carried forward from the last observation.",
   },
   {
     name: "Market Cluster Analysis",
-    algorithm: "K-Means (k=5)",
+    algorithm: `K-Means${cl.k ? ` (k=${cl.k})` : ""}`,
     framework: "scikit-learn 1.4",
     target: "Unsupervised — no target variable",
     features: "9 features: home value, income, homeownership, vacancy, affordability ratio, price-to-income, appreciation, housing age, population",
-    train_test: "All 88 counties · elbow method tested k=2–8",
-    metrics: "Inertia=369.3 at k=5 · StandardScaler preprocessing · 20 random initializations",
-    notes: "76 of 88 counties cluster into 'Value Market' — Ohio is predominantly affordable relative to coastal markets.",
+    train_test: `All 88 counties · ${cl.k_selection ?? "silhouette score tested k=3–8"}`,
+    metrics: cl.silhouette_scores && cl.k != null
+      ? `Silhouette=${cl.silhouette_scores[String(cl.k)]} at k=${cl.k} · StandardScaler preprocessing · 20 random initializations`
+      : "StandardScaler preprocessing · 20 random initializations",
+    notes: topCluster
+      ? `${topCluster[1]} of 88 counties cluster into '${topCluster[0]}' — Ohio is predominantly affordable relative to coastal markets.`
+      : "Ohio is predominantly affordable relative to coastal markets.",
   },
   {
     name: "Affordability Risk Classifier",
     algorithm: "Random Forest Classifier",
     framework: "scikit-learn 1.4",
-    target: "4-class: Low Risk / Moderate / High Risk / Severe",
-    features: "11 features: home value, income, rent, homeownership, vacancy, population, price-to-income, YoY changes, metro flag, year",
-    train_test: "80/20 stratified split",
-    metrics: "Accuracy=0.89+ · Classes derived from affordability ratio quartiles",
-    notes: "Affordability Index = (5 × median income) / median home value × 100. Index ≥ 100 = household earning median income can afford median home at 20% down, 30-yr mortgage.",
+    target: `${(af.classes ?? []).length || 4}-class: ${(af.classes ?? ["Low Risk", "Moderate", "High Risk", "Severe"]).join(" / ")}`,
+    features: `${(af.features ?? []).length || 11} features — rent and income deliberately excluded (they define the target)`,
+    train_test: af.validation ?? "temporal holdout on the latest year",
+    metrics: af.accuracy != null
+      ? `Accuracy=${af.accuracy} on the held-out year · Classes = training-year quartiles of rent-to-income ratio`
+      : "Classes = training-year quartiles of rent-to-income ratio",
+    notes: "Target = quartiles of annual rent ÷ household income, with quartile edges computed on training years only to avoid threshold leakage.",
   },
 ];
 
 const PIPELINE_STEPS = [
   { step: "01", name: "scripts/01_fetch_census_data.py", desc: "Calls Census ACS API for all 88 Ohio counties across 5 years. No API key required. Rate-limited to 0.5s between years." },
-  { step: "02", name: "scripts/02_fetch_redfin_data.py", desc: "Downloads county_market_tracker.tsv000.gz from Redfin S3 (~1.5 GB), decompresses in-memory, filters state_code='OH', saves 48K rows." },
-  { step: "03", name: "scripts/03_fetch_fred_data.py", desc: "Downloads 21 FRED series via direct CSV endpoint (no API key). Saves long format (2,934 obs) and wide format (711 rows × 22 cols)." },
+  { step: "02", name: "scripts/02_fetch_redfin_data.py", desc: "Downloads county_market_tracker.tsv000.gz from Redfin S3 (~1.5 GB), streams to disk, filters state_code='OH' in chunks." },
+  { step: "03", name: "scripts/03_fetch_fred_data.py", desc: "Downloads 21 FRED series via direct CSV endpoint (no API key). Saves long and wide parquet formats." },
   { step: "04", name: "src/etl/pipeline.py", desc: "OhioRealEstateETL class builds DuckDB star schema. Drops tables in dependency order, recreates, loads dimensions then facts, builds mart." },
   { step: "05", name: "src/etl/feature_engineering.py", desc: "Builds 46-feature county matrix with lag features (1yr, 2yr), rolling averages, derived ratios, region dummies. Computes market heat index." },
   { step: "06", name: "src/models/train_models.py", desc: "Trains 4 models sequentially. Serializes artifacts to warehouse/models/ as pickle. Writes JSON metrics files for dashboard consumption." },
-  { step: "07", name: "pipeline/run_pipeline.py", desc: "Orchestrator: patches BASE_DIR in scripts, runs steps 1–6, exports 10 JSON files to client/src/data/, writes pipeline_meta.json with timestamp." },
+  { step: "07", name: "pipeline/run_pipeline.py", desc: "Orchestrator: runs steps 1–6, exports JSON files (incl. model_metrics.json) to client/src/data/, writes pipeline_meta.json with timestamp and warehouse counts." },
 ];
 
 export default function About() {
