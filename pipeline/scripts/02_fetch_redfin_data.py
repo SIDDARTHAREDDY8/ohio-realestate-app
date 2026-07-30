@@ -46,6 +46,9 @@ def download_and_filter_ohio(name: str, url: str) -> pd.DataFrame:
         total_rows = 0
         with gzip.open(tmp_path, "rt", encoding="utf-8", errors="replace") as f:
             for chunk_df in pd.read_csv(f, sep="\t", low_memory=False, chunksize=250_000):
+                # Redfin switched the export to UPPERCASE column names in 2026;
+                # normalize so both old and new formats work downstream.
+                chunk_df.columns = [c.lower() for c in chunk_df.columns]
                 total_rows += len(chunk_df)
                 if "state_code" in chunk_df.columns:
                     part = chunk_df[chunk_df["state_code"] == "OH"]

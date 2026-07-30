@@ -81,6 +81,14 @@ jobs:
             ${{ github.event.inputs.skip_redfin == 'true' && '--skip-redfin' || '' }} \
             ${{ github.event.inputs.skip_models == 'true' && '--skip-models' || '' }}
 
+      # Surface the failure cause directly in the run page — the log tail
+      # shows which pipeline step failed and its traceback.
+      - name: Show pipeline log on failure
+        if: failure()
+        run: |
+          echo "=== last 150 lines of pipeline.log ==="
+          tail -n 150 pipeline/pipeline.log || echo "(no pipeline.log found)"
+
       # ── 6. Verify output ───────────────────────────────────────────────────
       - name: Verify frontend data files
         run: |
