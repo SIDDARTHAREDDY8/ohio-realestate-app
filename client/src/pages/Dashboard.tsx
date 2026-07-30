@@ -67,7 +67,7 @@ function SectionHeader({ title, source, url }: { title: string; source: string; 
 
 const CHART_STYLE = {
   fontSize: 10,
-  fontFamily: "'IBM Plex Mono', monospace",
+  fontFamily: "'Inter', sans-serif",
 };
 
 export default function Dashboard() {
@@ -129,25 +129,24 @@ export default function Dashboard() {
   return (
     <div className="p-4 space-y-4">
       {/* ── Executive Header ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-border">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-border">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">OHIO REAL ESTATE MARKET INTELLIGENCE</h1>
-          <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-1">
-            Institutional Research & Predictive Analytics Platform
+          <h1 className="text-2xl font-bold tracking-tight">Ohio Market Overview</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Statewide research &amp; predictive analytics across all 88 Ohio counties
           </p>
         </div>
-        <div className="flex items-center gap-4 text-right">
-          <div className="source-tag">
-            <div className="font-semibold text-foreground uppercase tracking-tighter">Market Status</div>
-            <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Terminal Connected
-            </div>
-          </div>
-          <div className="source-tag border-l border-border pl-4">
-            <div className="font-semibold text-foreground uppercase tracking-tighter">Last Data Refresh</div>
-            <div className="text-[10px] mt-0.5">2026-07-01 06:00 UTC</div>
-          </div>
+        <div className="flex items-center gap-3">
+          <span className="badge-live">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live market data
+          </span>
+          <span className="badge-cached">
+            Updated{" "}
+            {live.lastPipelineRun
+              ? new Date(live.lastPipelineRun).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+              : "—"}
+          </span>
         </div>
       </div>
 
@@ -190,7 +189,7 @@ export default function Dashboard() {
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} />
                 <Tooltip
-                  contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2, border: "1px solid var(--border)" }}
+                  contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2, border: "1px solid var(--border)" }}
                   formatter={(v: any, name: string) => [v?.toFixed ? v.toFixed(1) : v, name]}
                 />
                 <Area type="monotone" dataKey="actual" stroke={C1} fill="url(#hpiG)" strokeWidth={1.5} dot={false} name="HPI (actual)" connectNulls={false} />
@@ -214,7 +213,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={35} tickFormatter={v => `${v}%`} domain={["auto", "auto"]} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Rate"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Rate"]} />
                 <ReferenceLine y={7} stroke={C4} strokeDasharray="3 3" strokeWidth={1} />
                 <Line type="monotone" dataKey="rate" stroke={C4} strokeWidth={1.5} dot={false} />
               </LineChart>
@@ -237,7 +236,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={48} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Listing Price"]} />
                 <Area type="monotone" dataKey="price" stroke={C3} fill="url(#listG)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -259,7 +258,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Active Listings"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Active Listings"]} />
                 <Area type="monotone" dataKey="count" stroke={C2} fill="url(#invG)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -331,7 +330,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
                 <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Median Value"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Median Value"]} />
                 <Bar dataKey="median_home_value_2023" fill={C1} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -350,7 +349,7 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
                 <YAxis type="category" dataKey="county_name" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "5-Yr Change"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "5-Yr Change"]} />
                 <Bar dataKey="home_value_5yr_change" fill={C3} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>

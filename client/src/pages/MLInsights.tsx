@@ -43,7 +43,7 @@ const C3 = "oklch(0.48 0.16 145)";
 const C4 = "oklch(0.55 0.20 25)";
 const C5 = "oklch(0.62 0.18 75)";
 
-const CHART_STYLE = { fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" };
+const CHART_STYLE = { fontSize: 10, fontFamily: "'Inter', sans-serif" };
 
 function fmtK(n: number | null | undefined) {
   if (n == null) return "—";
@@ -226,7 +226,7 @@ export default function MLInsights() {
                   dataKey="actual" name="Actual" type="number"
                   tick={CHART_STYLE} tickLine={false} axisLine={false}
                   tickFormatter={v => `$${(v/1000).toFixed(0)}K`}
-                  label={{ value: "Actual ($)", position: "insideBottom", offset: -5, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}
+                  label={{ value: "Actual ($)", position: "insideBottom", offset: -5, fontSize: 10, fontFamily: "'Inter', sans-serif" }}
                 />
                 <YAxis
                   dataKey="predicted" name="Predicted" type="number"
@@ -235,7 +235,7 @@ export default function MLInsights() {
                   width={52}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }}
+                  contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }}
                   formatter={(v: any, name: string) => [`$${Number(v).toLocaleString()}`, name]}
                   labelFormatter={(_, payload) => payload?.[0]?.payload?.county ?? ""}
                 />
@@ -265,7 +265,7 @@ export default function MLInsights() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v}%`} />
                 <YAxis type="category" dataKey="feature" tick={{ ...CHART_STYLE, fontSize: 9 }} tickLine={false} axisLine={false} width={155} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Importance"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Importance"]} />
                 <Bar dataKey="importance" radius={[0, 2, 2, 0]}>
                   {FEATURE_IMPORTANCE.map((entry, i) => (
                     <Cell key={i} fill={entry.category === "lag" ? C1 : entry.category === "economic" ? C3 : entry.category === "derived" ? C5 : C2} />
@@ -303,7 +303,7 @@ export default function MLInsights() {
                     border: `1px solid ${color}`,
                     color: activeCluster === label ? "white" : color,
                     background: activeCluster === label ? color : "transparent",
-                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontFamily: "'Inter', sans-serif",
                   }}
                 >
                   {label}
@@ -328,7 +328,7 @@ export default function MLInsights() {
                     <Cell key={i} fill={CLUSTER_COLORS[entry.name] ?? "oklch(0.65 0.005 240)"} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="source-tag mt-1">

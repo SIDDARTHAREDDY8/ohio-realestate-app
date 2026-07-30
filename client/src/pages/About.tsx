@@ -166,7 +166,7 @@ export default function About() {
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
             {["Python 3.11", "DuckDB 0.10", "XGBoost 2.0", "Prophet 1.1", "scikit-learn 1.4", "React 19", "TypeScript", "Recharts", "GitHub Actions"].map(t => (
-              <code key={t} className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{t}</code>
+              <code key={t} className="text-xs px-1.5 py-0.5 rounded" style={{ background: "var(--muted)", fontFamily: "'Inter', sans-serif" }}>{t}</code>
             ))}
           </div>
         </div>

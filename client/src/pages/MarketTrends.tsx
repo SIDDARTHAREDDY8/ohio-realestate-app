@@ -26,7 +26,7 @@ const C3 = "oklch(0.48 0.16 145)";
 const C4 = "oklch(0.55 0.20 25)";
 const C5 = "oklch(0.62 0.18 75)";
 
-const CHART_STYLE = { fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" };
+const CHART_STYLE = { fontSize: 10, fontFamily: "'Inter', sans-serif" };
 
 function fmtK(n: number | null | undefined) {
   if (n == null) return "—";
@@ -189,7 +189,7 @@ export default function MarketTrends() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={52} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Avg Sale Price"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`$${Number(v).toLocaleString()}`, "Avg Sale Price"]} />
                 <Area type="monotone" dataKey="avg_price" stroke={C1} fill="url(#priceG)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -205,8 +205,8 @@ export default function MarketTrends() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={30} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)} days`, "Avg DOM"]} />
-                <ReferenceLine y={30} stroke={C4} strokeDasharray="3 3" strokeWidth={1} label={{ value: "30d", position: "right", fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", fill: C4 }} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)} days`, "Avg DOM"]} />
+                <ReferenceLine y={30} stroke={C4} strokeDasharray="3 3" strokeWidth={1} label={{ value: "30d", position: "right", fontSize: 9, fontFamily: "'Inter', sans-serif", fill: C4 }} />
                 <Line type="monotone" dataKey="avg_dom" stroke={C5} strokeWidth={1.5} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -225,7 +225,7 @@ export default function MarketTrends() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v.toFixed(0)}%`} domain={["auto", "auto"]} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Sale/List"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, "Sale/List"]} />
                 <ReferenceLine y={100} stroke={C4} strokeDasharray="3 3" strokeWidth={1} />
                 <Line type="monotone" dataKey="avg_s2l" stroke={C3} strokeWidth={1.5} dot={false} />
               </LineChart>
@@ -248,7 +248,7 @@ export default function MarketTrends() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" />
                 <XAxis dataKey="date" tick={CHART_STYLE} tickLine={false} axisLine={false} minTickGap={60} />
                 <YAxis tick={CHART_STYLE} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Homes Sold"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [Number(v).toLocaleString(), "Homes Sold"]} />
                 <Area type="monotone" dataKey="total_sold" stroke={C2} fill="url(#soldG)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
@@ -297,10 +297,10 @@ export default function MarketTrends() {
                 tickFormatter={(v) => metric.includes("price") || metric.includes("ppsf") ? `$${(v/1000).toFixed(0)}K` : String(v)}
               />
               <Tooltip
-                contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }}
+                contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }}
                 formatter={(v: any, name: string) => [selectedMetric.fmt(v), name]}
               />
-              <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+              <Legend wrapperStyle={{ fontSize: 10, fontFamily: "'Inter', sans-serif" }} />
               <Line type="monotone" dataKey={county1} stroke={C1} strokeWidth={1.5} dot={false} connectNulls />
               <Line type="monotone" dataKey={county2} stroke={C4} strokeWidth={1.5} dot={false} connectNulls />
             </LineChart>
@@ -318,7 +318,7 @@ export default function MarketTrends() {
                 <CartesianGrid strokeDasharray="2 4" stroke="oklch(0.90 0.004 240)" horizontal={false} />
                 <XAxis type="number" tick={CHART_STYLE} tickLine={false} axisLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
                 <YAxis type="category" dataKey="region" tick={{ ...CHART_STYLE, fontSize: 10 }} tickLine={false} axisLine={false} width={120} />
-                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Appreciation"]} />
+                <Tooltip contentStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", borderRadius: 2 }} formatter={(v: any) => [`${Number(v).toFixed(1)}%`, "Appreciation"]} />
                 <Bar dataKey="change" fill={C3} radius={[0, 2, 2, 0]} />
               </BarChart>
             </ResponsiveContainer>

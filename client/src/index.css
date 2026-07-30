@@ -1,16 +1,14 @@
 /*
  * Ohio Real Estate Market Intelligence Platform
- * Design: "Data Terminal" — dense, monospace-first, no decorative chrome
- * Inspired by: Bloomberg Terminal, Grafana, dbt docs, Metabase
- * Anti-patterns avoided: gradient overlays, glowing hero images, oversized KPI cards,
- *   blueprint grid textures, rounded everything, Inter font for data
+ * Design: "Market Pro" — polished proptech SaaS
+ * Inspired by: CoStar, HouseCanary, Zillow Research, CoreLogic dashboards
  *
  * Core principles:
- *   1. Numbers are the hero — IBM Plex Mono for ALL data values
- *   2. Information density > whitespace
- *   3. Color communicates meaning (green=up, red=down, amber=warning) not decoration
- *   4. Borders and lines create structure, not shadows and cards
- *   5. Dark sidebar is a navigation tool, not a branding element
+ *   1. Clean light canvas, deep navy sidebar, single confident blue accent
+ *   2. Inter everywhere; numbers use tabular figures, larger and heavier
+ *   3. Cards with soft shadows and 10px radii — structure through elevation
+ *   4. Color communicates meaning (green=up, red=down, amber=warning)
+ *   5. Comfortable density: readable tables, generous section headers
  */
 
 @import "tailwindcss";
@@ -58,53 +56,53 @@
 }
 
 :root {
-  --radius: 0.25rem;  /* tight corners — data tools don't round everything */
+  --radius: 0.625rem;  /* soft, modern SaaS corners */
 
-  /* Off-white background — not pure white, not gray */
-  --background: oklch(0.975 0.002 240);
-  --foreground: oklch(0.12 0.01 240);
+  /* Cool off-white canvas */
+  --background: oklch(0.977 0.003 245);
+  --foreground: oklch(0.20 0.02 255);
 
-  /* Panels and tables */
+  /* Cards */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0.01 240);
+  --card-foreground: oklch(0.20 0.02 255);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0.01 240);
+  --popover-foreground: oklch(0.20 0.02 255);
 
-  /* Primary: slate blue — not Ohio-flag blue, more neutral/professional */
-  --primary: oklch(0.38 0.12 250);
-  --primary-foreground: oklch(0.97 0.005 250);
+  /* Primary: confident product blue */
+  --primary: oklch(0.50 0.19 258);
+  --primary-foreground: oklch(0.98 0.005 250);
 
-  --secondary: oklch(0.94 0.005 240);
-  --secondary-foreground: oklch(0.25 0.01 240);
-  --muted: oklch(0.94 0.004 240);
-  --muted-foreground: oklch(0.48 0.012 240);
-  --accent: oklch(0.92 0.008 250);
-  --accent-foreground: oklch(0.25 0.08 250);
+  --secondary: oklch(0.955 0.006 250);
+  --secondary-foreground: oklch(0.30 0.03 255);
+  --muted: oklch(0.955 0.005 245);
+  --muted-foreground: oklch(0.50 0.02 250);
+  --accent: oklch(0.94 0.02 255);
+  --accent-foreground: oklch(0.35 0.10 258);
 
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.97 0 0);
 
-  /* Tight borders — visible but not heavy */
-  --border: oklch(0.87 0.006 240);
-  --input: oklch(0.87 0.006 240);
-  --ring: oklch(0.38 0.12 250);
+  /* Hairline borders */
+  --border: oklch(0.905 0.008 250);
+  --input: oklch(0.905 0.008 250);
+  --ring: oklch(0.50 0.19 258);
 
-  /* Chart palette: sequential blue-to-red for data */
-  --chart-1: oklch(0.38 0.12 250);
-  --chart-2: oklch(0.52 0.14 220);
+  /* Chart palette: blue-led, professional */
+  --chart-1: oklch(0.50 0.19 258);
+  --chart-2: oklch(0.60 0.13 220);
   --chart-3: oklch(0.62 0.14 185);
-  --chart-4: oklch(0.62 0.16 145);
-  --chart-5: oklch(0.55 0.20 25);
+  --chart-4: oklch(0.60 0.15 150);
+  --chart-5: oklch(0.65 0.16 70);
 
-  /* Sidebar: very dark, near-black — not navy, not branded */
-  --sidebar: oklch(0.11 0.008 240);
-  --sidebar-foreground: oklch(0.82 0.008 240);
-  --sidebar-primary: oklch(0.52 0.14 250);
-  --sidebar-primary-foreground: oklch(0.97 0 0);
-  --sidebar-accent: oklch(0.18 0.01 240);
-  --sidebar-accent-foreground: oklch(0.88 0.008 240);
-  --sidebar-border: oklch(0.20 0.008 240);
-  --sidebar-ring: oklch(0.52 0.14 250);
+  /* Sidebar: deep corporate navy */
+  --sidebar: oklch(0.235 0.045 258);
+  --sidebar-foreground: oklch(0.86 0.015 250);
+  --sidebar-primary: oklch(0.60 0.17 258);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.30 0.05 258);
+  --sidebar-accent-foreground: oklch(0.93 0.01 250);
+  --sidebar-border: oklch(0.31 0.045 258);
+  --sidebar-ring: oklch(0.60 0.17 258);
 }
 
 @layer base {
@@ -114,8 +112,9 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -145,24 +144,26 @@
     }
   }
 
-  /* ── Data values: always monospace ── */
+  /* ── Data values: Inter with tabular figures ── */
   .data-value {
-    font-family: 'IBM Plex Mono', 'Courier New', monospace;
-    font-weight: 500;
-    letter-spacing: -0.03em;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
   }
 
   /* ── Trend colors: semantic only ── */
-  .trend-up   { color: oklch(0.48 0.16 145); }
+  .trend-up   { color: oklch(0.50 0.15 150); }
   .trend-down { color: oklch(0.52 0.20 25); }
-  .trend-neutral { color: oklch(0.48 0.012 240); }
+  .trend-neutral { color: oklch(0.50 0.02 250); }
 
-  /* ── Section panel: tight border, no shadow ── */
+  /* ── Card panel: soft elevation ── */
   .panel {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    box-shadow: 0 1px 2px oklch(0.20 0.02 255 / 0.05), 0 1px 3px oklch(0.20 0.02 255 / 0.06);
+    overflow: hidden;
   }
 
   /* ── Stat row: horizontal key-value pair ── */
@@ -170,70 +171,63 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 0.35rem 0;
-    border-bottom: 1px solid oklch(0.93 0.004 240);
-    font-size: 12px;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid oklch(0.945 0.005 245);
+    font-size: 13px;
   }
   .stat-row:last-child { border-bottom: none; }
   .stat-row .label { color: var(--muted-foreground); }
-  .stat-row .val   { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; }
+  .stat-row .val   { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px; }
 
-  /* ── Table: tight, no card wrapper ── */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  /* ── Table: comfortable SaaS density ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .data-table th {
     text-align: left;
-    padding: 6px 10px;
-    font-size: 11px;
+    padding: 10px 14px;
+    font-size: 12px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     color: var(--muted-foreground);
-    border-bottom: 2px solid var(--border);
+    border-bottom: 1px solid var(--border);
     white-space: nowrap;
-    background: oklch(0.97 0.002 240);
+    background: oklch(0.975 0.004 248);
   }
   .data-table td {
-    padding: 5px 10px;
-    border-bottom: 1px solid oklch(0.93 0.004 240);
+    padding: 9px 14px;
+    border-bottom: 1px solid oklch(0.945 0.005 245);
     vertical-align: middle;
   }
-  .data-table tr:hover td { background: oklch(0.96 0.003 240); }
-  .data-table .mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  .data-table tr:hover td { background: oklch(0.965 0.008 255); }
+  .data-table .mono { font-variant-numeric: tabular-nums; font-weight: 500; font-size: 13px; }
 
   /* ── Source tag: small attribution label ── */
   .source-tag {
-    font-size: 10px;
+    font-size: 11.5px;
     color: var(--muted-foreground);
-    font-family: 'IBM Plex Mono', monospace;
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
   }
 
   /* ── Live badge ── */
   .badge-live {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    font-size: 10px;
+    gap: 4px;
+    font-size: 11px;
     font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-    padding: 1px 5px;
-    border-radius: 2px;
-    background: oklch(0.92 0.08 145);
-    color: oklch(0.35 0.14 145);
-    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: oklch(0.94 0.05 150);
+    color: oklch(0.38 0.12 150);
   }
   .badge-cached {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    font-size: 10px;
+    gap: 4px;
+    font-size: 11px;
     font-weight: 600;
-    font-family: 'IBM Plex Mono', monospace;
-    padding: 1px 5px;
-    border-radius: 2px;
-    background: oklch(0.93 0.005 240);
-    color: oklch(0.45 0.01 240);
-    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: oklch(0.945 0.005 245);
+    color: oklch(0.46 0.02 250);
   }
 
   /* ── Section header ── */
@@ -241,44 +235,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    gap: 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border);
-    background: oklch(0.97 0.002 240);
+    background: var(--card);
   }
   .section-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: var(--foreground);
   }
 
-  /* ── Ticker strip ── */
+  /* ── KPI stat strip ── */
   .ticker-item {
     display: flex;
     flex-direction: column;
-    padding: 8px 14px;
+    padding: 10px 18px;
     border-right: 1px solid var(--border);
-    min-width: 120px;
+    min-width: 132px;
   }
   .ticker-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     color: var(--muted-foreground);
     margin-bottom: 2px;
   }
   .ticker-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    line-height: 1.1;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
   }
   .ticker-change {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-size: 12px;
     margin-top: 1px;
+    font-variant-numeric: tabular-nums;
   }
 }

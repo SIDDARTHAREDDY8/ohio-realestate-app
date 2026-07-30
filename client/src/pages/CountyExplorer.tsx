@@ -23,7 +23,7 @@ const clusterData = clusters as any[];
 const C1 = "oklch(0.38 0.12 250)";
 const C3 = "oklch(0.48 0.16 145)";
 const C4 = "oklch(0.55 0.20 25)";
-const CHART_STYLE = { fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" };
+const CHART_STYLE = { fontSize: 10, fontFamily: "'Inter', sans-serif" };
 
 function fmtK(n: number | null | undefined) {
   if (n == null) return "—";
@@ -255,7 +255,7 @@ export default function CountyExplorer() {
               <ResponsiveContainer width="100%" height={180}>
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="oklch(0.90 0.004 240)" />
-                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fontFamily: "'Inter', sans-serif" }} />
                   <Radar dataKey="value" stroke={C1} fill={C1} fillOpacity={0.15} strokeWidth={1.5} />
                 </RadarChart>
               </ResponsiveContainer>
