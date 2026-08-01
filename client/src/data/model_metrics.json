@@ -7,12 +7,12 @@
     "metrics": [
       {
         "model": "XGBoost",
-        "mae": 4527.19,
-        "rmse": 7492.37,
-        "r2": 0.9786,
-        "mape": 2.18,
-        "cv_r2_mean": 0.9591,
-        "cv_r2_std": 0.0225
+        "mae": 4305.33,
+        "rmse": 6921.42,
+        "r2": 0.9817,
+        "mape": 2.17,
+        "cv_r2_mean": 0.9594,
+        "cv_r2_std": 0.0223
       },
       {
         "model": "GradientBoosting",
@@ -55,11 +55,11 @@
       },
       {
         "feature": "median_home_value_lag1",
-        "importance": 0.31808215761213676
+        "importance": 0.3180821576121368
       },
       {
         "feature": "price_to_income_ratio",
-        "importance": 0.09427785481532039
+        "importance": 0.09427785481532037
       },
       {
         "feature": "median_gross_rent",
@@ -67,55 +67,55 @@
       },
       {
         "feature": "median_household_income_lag1",
-        "importance": 0.015844256951891164
+        "importance": 0.01584425695189116
       },
       {
         "feature": "housing_stock_age",
-        "importance": 0.007119892129838884
+        "importance": 0.007119892129838881
       },
       {
         "feature": "persons_per_unit",
-        "importance": 0.00709876307229576
+        "importance": 0.007098763072295766
       },
       {
         "feature": "median_year_structure_built",
-        "importance": 0.005711088936264564
+        "importance": 0.005711088936264558
       },
       {
         "feature": "median_rooms",
-        "importance": 0.004126561938030024
+        "importance": 0.004126561938030026
       },
       {
         "feature": "total_population",
-        "importance": 0.0031809741346241188
+        "importance": 0.0031809741346241057
       },
       {
         "feature": "renter_rate",
-        "importance": 0.003020122392547758
+        "importance": 0.003020122392547755
       },
       {
         "feature": "median_home_value_lag2",
-        "importance": 0.0020450507658931836
+        "importance": 0.002045050765893188
       },
       {
         "feature": "homeownership_rate",
-        "importance": 0.0014288783150834842
+        "importance": 0.001428878315083484
       },
       {
         "feature": "vacancy_rate",
-        "importance": 0.0014106729420800945
+        "importance": 0.0014106729420800914
       },
       {
         "feature": "year",
-        "importance": 0.0010834712540763974
+        "importance": 0.001083471254076397
       }
     ]
   },
   "hpi_forecast": {
     "model_name": "Ohio HPI Prophet Forecaster",
-    "test_mae": 7.3003,
-    "test_rmse": 8.4996,
-    "test_r2": 0.6032,
+    "test_mae": 5.8512,
+    "test_rmse": 7.0126,
+    "test_r2": 0.7299,
     "n_train": 37,
     "n_test": 8,
     "regressors": [
@@ -139,11 +139,11 @@
       "Urban Core": 8
     },
     "inertias": {
-      "3": 502.443012441581,
+      "3": 502.4430124415811,
       "4": 433.4221553214204,
-      "5": 369.2640502544814,
+      "5": 369.26405025448133,
       "6": 318.6870498341557,
-      "7": 290.8278399376824,
+      "7": 290.8278399376825,
       "8": 265.64762704029727
     },
     "silhouette_scores": {
@@ -168,15 +168,15 @@
         "support": 22.0
       },
       "Low Risk": {
-        "precision": 0.8333333333333334,
+        "precision": 0.8064516129032258,
         "recall": 0.9259259259259259,
-        "f1-score": 0.8771929824561403,
+        "f1-score": 0.8620689655172413,
         "support": 27.0
       },
       "Moderate": {
-        "precision": 0.64,
+        "precision": 0.6666666666666666,
         "recall": 0.7272727272727273,
-        "f1-score": 0.6808510638297872,
+        "f1-score": 0.6956521739130435,
         "support": 22.0
       },
       "Severe": {
@@ -187,15 +187,15 @@
       },
       "accuracy": 0.75,
       "macro avg": {
-        "precision": 0.7479289215686274,
+        "precision": 0.7478751581277672,
         "recall": 0.740839770251535,
-        "f1-score": 0.7403268623873327,
+        "f1-score": 0.740246135673422,
         "support": 88.0
       },
       "weighted avg": {
-        "precision": 0.7491126336898396,
+        "precision": 0.747531499769996,
         "recall": 0.75,
-        "f1-score": 0.7454015325337732,
+        "f1-score": 0.7444614866756069,
         "support": 88.0
       }
     },
