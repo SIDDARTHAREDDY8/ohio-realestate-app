@@ -113,10 +113,10 @@
   },
   "hpi_forecast": {
     "model_name": "Ohio HPI Prophet Forecaster",
-    "test_mae": 5.8512,
-    "test_rmse": 7.0126,
-    "test_r2": 0.7299,
-    "n_train": 37,
+    "test_mae": 57.6748,
+    "test_rmse": 61.5566,
+    "test_r2": -18.3341,
+    "n_train": 38,
     "n_test": 8,
     "regressors": [
       "mortgage_rate_30yr_fixed",
