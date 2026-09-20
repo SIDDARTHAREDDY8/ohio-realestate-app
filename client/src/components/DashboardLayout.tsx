@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Menu, X, Building2, LayoutDashboard, Map, TrendingUp, Brain, BarChart3, Info,
-  GitCompareArrows, Calculator, Trophy,
+  GitCompareArrows, Calculator, Trophy, MapPin, House,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLiveData, type LiveData, type LiveMetric } from "@/hooks/useLiveData";
@@ -25,6 +25,8 @@ const NAV_ITEMS = [
   { path: "/compare-counties",    label: "Compare Counties", icon: GitCompareArrows },
   { path: "/investor-scorecard",  label: "Investor Scorecard", icon: Trophy },
   { path: "/affordability",       label: "Affordability",   icon: Calculator },
+  { path: "/zip-lookup",          label: "Zip Lookup",      icon: MapPin },
+  { path: "/listings",            label: "Listings",        icon: House },
   { path: "/economic-indicators", label: "Economics",       icon: BarChart3 },
   { path: "/about",               label: "About & Data",    icon: Info },
 ];

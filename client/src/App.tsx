@@ -17,6 +17,8 @@ import MLInsights from "./pages/MLInsights";
 import CompareCounties from "./pages/CompareCounties";
 import InvestorScorecard from "./pages/InvestorScorecard";
 import Affordability from "./pages/Affordability";
+import ZipLookup from "./pages/ZipLookup";
+import Listings from "./pages/Listings";
 import EconomicIndicators from "./pages/EconomicIndicators";
 import About from "./pages/About";
 
@@ -35,6 +37,8 @@ function AppRouter() {
           <Route path="/compare-counties" component={CompareCounties} />
           <Route path="/investor-scorecard" component={InvestorScorecard} />
           <Route path="/affordability" component={Affordability} />
+          <Route path="/zip-lookup" component={ZipLookup} />
+          <Route path="/listings" component={Listings} />
           <Route path="/economic-indicators" component={EconomicIndicators} />
           <Route path="/about" component={About} />
           <Route path="/404" component={NotFound} />

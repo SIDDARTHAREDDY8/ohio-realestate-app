@@ -4,9 +4,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { GitCompareArrows } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
@@ -91,17 +89,21 @@ export default function CompareCounties() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <GitCompareArrows className="w-7 h-7 text-[oklch(0.55_0.16_250)]" />
-          Compare Counties
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          Pick up to three counties and compare them side by side. Green marks the best value in each row.
-        </p>
+    <div className="p-4 space-y-4">
+      {/* ── Executive Header ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Compare Counties</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pick up to three counties and compare them side by side. Green marks the best value in each row.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="badge-cached">Census ACS · 2023 5-yr</span>
+        </div>
       </div>
 
+      {/* ── County pickers ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {picks.map((fips, i) => (
           <div key={i}>
@@ -124,17 +126,19 @@ export default function CompareCounties() {
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Head-to-Head</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[560px]">
+      {/* ── Head-to-head table ── */}
+      <div className="panel">
+        <div className="section-header">
+          <span className="section-title">Head-to-Head</span>
+          <span className="source-tag">Census ACS 2023</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="data-table min-w-[560px]">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 pr-4 font-semibold text-muted-foreground w-44">Metric</th>
+              <tr>
+                <th className="w-44">Metric</th>
                 {selected.map((c, i) => (
-                  <th key={c.county_fips} className="text-right py-2 px-3 font-bold"
+                  <th key={c.county_fips} className="!text-right font-bold"
                       style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>
                     {c.county_name}
                   </th>
@@ -145,16 +149,16 @@ export default function CompareCounties() {
               {ROWS.map(row => {
                 const bi = bestIndex(row);
                 return (
-                  <tr key={row.label} className="border-b last:border-0 hover:bg-muted/40">
-                    <td className="py-2.5 pr-4 text-muted-foreground font-medium">{row.label}</td>
+                  <tr key={row.label}>
+                    <td className="text-muted-foreground font-medium">{row.label}</td>
                     {selected.map((c, i) => {
                       const v = row.get(c);
                       const isBest = i === bi;
                       return (
                         <td key={c.county_fips}
                             className={cn(
-                              "text-right py-2.5 px-3 tabular-nums font-semibold",
-                              isBest && "text-[oklch(0.48_0.16_145)] bg-[oklch(0.48_0.16_145)/0.08]"
+                              "mono !text-right font-semibold",
+                              isBest && "text-[oklch(0.42_0.14_145)] bg-[oklch(0.48_0.16_145)/0.08]"
                             )}>
                           {row.format(v)}
                           {isBest && <span className="ml-1 text-xs">●</span>}
@@ -166,14 +170,16 @@ export default function CompareCounties() {
               })}
             </tbody>
           </table>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Median Home Value</CardTitle>
-        </CardHeader>
-        <CardContent className="h-64">
+      {/* ── Home value chart ── */}
+      <div className="panel">
+        <div className="section-header">
+          <span className="section-title">Median Home Value</span>
+          <span className="source-tag">Census ACS 2023</span>
+        </div>
+        <div className="h-64 p-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 24 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -187,10 +193,10 @@ export default function CompareCounties() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="source-tag">
         Source: US Census Bureau, American Community Survey 5-Year 2023. "Best" is directional
         (e.g. lower price favors buyers, higher appreciation favors owners) — not financial advice.
       </p>

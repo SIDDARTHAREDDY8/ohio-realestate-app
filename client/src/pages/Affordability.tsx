@@ -6,9 +6,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { Calculator } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import countySummary from "@/data/county_summary.json";
@@ -58,7 +56,6 @@ export default function Affordability() {
     let maxPrice = price;
     if (income > 0) {
       const target = (income / 12) * 0.28;
-      // solve: total(p) <= target — linear-ish, iterate
       let lo = 0, hi = price * 4 + 500000;
       for (let i = 0; i < 40; i++) {
         const mid = (lo + hi) / 2;
@@ -86,21 +83,28 @@ export default function Affordability() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Calculator className="w-7 h-7 text-[oklch(0.55_0.16_250)]" />
-          Affordability Calculator
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          See what a typical home costs per month in any Ohio county — and whether it fits your income.
-        </p>
+    <div className="p-4 space-y-4">
+      {/* ── Executive Header ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Affordability Calculator</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            See what a typical home costs per month in any Ohio county — and whether it fits your income.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="badge-cached">FRED 30-yr · {DEFAULT_RATE.toFixed(2)}%</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Your Inputs</CardTitle></CardHeader>
-          <CardContent className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* ── Inputs ── */}
+        <div className="panel">
+          <div className="section-header">
+            <span className="section-title">Your Inputs</span>
+            <span className="source-tag">Census ACS 2023</span>
+          </div>
+          <div className="p-4 space-y-6">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">County</label>
               <Select value={fips} onValueChange={setFips}>
@@ -161,18 +165,19 @@ export default function Affordability() {
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Monthly Payment</CardTitle>
+        {/* ── Results ── */}
+        <div className="space-y-4">
+          <div className="panel">
+            <div className="section-header">
+              <span className="section-title">Monthly Payment</span>
               <Badge variant="outline" className={cn("text-sm font-bold", verdict.cls)}>
                 {verdict.label}
               </Badge>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="p-4">
               <div className="text-4xl font-bold tabular-nums">{money(calc.total)}
                 <span className="text-base font-normal text-muted-foreground">/mo</span>
               </div>
@@ -211,15 +216,18 @@ export default function Affordability() {
                   <div className="text-xs text-muted-foreground">At 28% of your income</div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="pt-6 text-sm text-muted-foreground space-y-1">
+          <div className="panel">
+            <div className="section-header">
+              <span className="section-title">Assumptions</span>
+            </div>
+            <div className="p-4 text-sm text-muted-foreground space-y-1">
               <p><span className="font-semibold text-foreground">Assumptions:</span> 30-yr fixed at {rate.toFixed(2)}% (FRED 30-yr avg {DEFAULT_RATE.toFixed(2)}%), {county?.county_name ?? ""} median price {money(price)}.</p>
               <p>Property tax {TAX_RATE * 100}%/yr (Ohio average effective rate), insurance {money(INSURANCE_MO)}/mo, PMI {PMI_RATE * 100}%/yr under 20% down. Estimate only — not a loan offer.</p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
