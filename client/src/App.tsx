@@ -14,6 +14,9 @@ import Dashboard from "./pages/Dashboard";
 import CountyExplorer from "./pages/CountyExplorer";
 import MarketTrends from "./pages/MarketTrends";
 import MLInsights from "./pages/MLInsights";
+import CompareCounties from "./pages/CompareCounties";
+import InvestorScorecard from "./pages/InvestorScorecard";
+import Affordability from "./pages/Affordability";
 import EconomicIndicators from "./pages/EconomicIndicators";
 import About from "./pages/About";
 
@@ -29,6 +32,9 @@ function AppRouter() {
           <Route path="/county-explorer" component={CountyExplorer} />
           <Route path="/market-trends" component={MarketTrends} />
           <Route path="/ml-insights" component={MLInsights} />
+          <Route path="/compare-counties" component={CompareCounties} />
+          <Route path="/investor-scorecard" component={InvestorScorecard} />
+          <Route path="/affordability" component={Affordability} />
           <Route path="/economic-indicators" component={EconomicIndicators} />
           <Route path="/about" component={About} />
           <Route path="/404" component={NotFound} />
