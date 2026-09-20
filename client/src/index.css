@@ -116,6 +116,12 @@
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
+  /* Balanced headings; keep inputs at 16px on mobile so iOS Safari
+     doesn't zoom the page on focus. */
+  h1, h2, h3 { text-wrap: balance; }
+  @media (max-width: 1023px) {
+    input, select, textarea { font-size: 16px; }
+  }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -255,7 +261,24 @@
     border-right: 1px solid var(--border);
     min-width: 132px;
   }
-  .ticker-label {
+  /* ── Mobile KPI strip: snap-scrolling row under the app bar ── */
+  .ticker-strip {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent 100%);
+  }
+  .ticker-strip::-webkit-scrollbar { display: none; }
+  .ticker-strip > .ticker-item {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+  .ticker-strip > .ticker-item:last-child { border-right: none; }  .ticker-label {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;

@@ -2,6 +2,10 @@
  * DashboardLayout — "Market Pro" SaaS shell
  * Deep navy sidebar with branded logo + icon navigation,
  * white top bar with page title and a live KPI strip.
+ *
+ * Mobile: branded app bar (menu button + wordmark + live pill) with the
+ * KPI strip as its own snap-scroll row underneath. The hamburger opens
+ * the same sidebar as a drawer.
  */
 
 import { useState } from "react";
@@ -10,7 +14,7 @@ import {
   Menu, X, Building2, LayoutDashboard, Map, TrendingUp, Brain, BarChart3, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLiveData, type LiveMetric } from "@/hooks/useLiveData";
+import { useLiveData, type LiveData, type LiveMetric } from "@/hooks/useLiveData";
 
 const NAV_ITEMS = [
   { path: "/",                    label: "Overview",        icon: LayoutDashboard },
@@ -62,6 +66,66 @@ function TickerItem({ label, value, metric }: TickerItemProps) {
   );
 }
 
+/** The 8 live KPI cells, shared by the desktop top bar and the mobile strip. */
+function tickerCells(live: LiveData) {
+  return [
+    { label: "Unemployment", value: fmt(live.ohio_unemployment.value, "", "%", 1), metric: live.ohio_unemployment },
+    { label: "Home Value", value: fmtK(live.ohio_median_home_value.value), metric: live.ohio_median_home_value },
+    { label: "Median Rent", value: fmtK(live.ohio_median_rent.value) + "/mo", metric: live.ohio_median_rent },
+    { label: "Homeownership", value: fmt(live.ohio_homeownership_rate.value, "", "%", 1), metric: live.ohio_homeownership_rate },
+    { label: "Listing Price", value: fmtK(live.ohio_listing_price.value), metric: live.ohio_listing_price },
+    { label: "30-Yr Mortgage", value: fmt(live.mortgage_rate_30yr.value, "", "%"), metric: live.mortgage_rate_30yr },
+    { label: "Fed Funds", value: fmt(live.fed_funds_rate.value, "", "%"), metric: live.fed_funds_rate },
+    { label: "Ohio HPI", value: fmt(live.ohio_hpi.value, "", "", 1), metric: live.ohio_hpi },
+  ];
+}
+
+/** Horizontally snap-scrolling KPI strip for the mobile app bar. */
+function TickerStrip({ live }: { live: LiveData }) {
+  return (
+    <div className="ticker-strip" role="region" aria-label="Live market indicators">
+      {tickerCells(live).map((t) => (
+        <TickerItem key={t.label} label={t.label} value={t.value} metric={t.metric} />
+      ))}
+    </div>
+  );
+}
+
+function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <div
+        className="flex items-center justify-center flex-shrink-0"
+        style={{
+          width: compact ? 32 : 34,
+          height: compact ? 32 : 34,
+          borderRadius: 8,
+          background: "linear-gradient(135deg, oklch(0.55 0.19 258), oklch(0.45 0.17 262))",
+        }}
+      >
+        <Building2 style={{ width: 17, height: 17, color: "white" }} />
+      </div>
+      <div className="min-w-0">
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em", lineHeight: 1.2, whiteSpace: "nowrap" }}>
+          Ohio Market IQ
+        </div>
+        <div style={{ fontSize: 11, color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>
+          Real Estate Intelligence
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LivePill() {
+  return (
+    <span className="badge-live" style={{ flexShrink: 0 }}>
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      Live
+    </span>
+  );
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -72,16 +136,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : "—";
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
+    <div className="flex h-dvh overflow-hidden" style={{ background: "var(--background)" }}>
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar / mobile drawer ── */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col transition-transform duration-200",
-          "w-[236px]",
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "w-[272px]",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "lg:w-[236px]"
         )}
-        style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}
+        style={{
+          background: "var(--sidebar)",
+          borderRight: "1px solid var(--sidebar-border)",
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        aria-label="Primary navigation"
       >
         {/* Brand */}
         <div className="px-4 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
@@ -94,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               background: "linear-gradient(135deg, oklch(0.55 0.19 258), oklch(0.45 0.17 262))",
             }}
           >
-            <Building2 className="w-4.5 h-4.5" style={{ width: 18, height: 18, color: "white" }} />
+            <Building2 style={{ width: 18, height: 18, color: "white" }} />
           </div>
           <div className="min-w-0">
             <div style={{ fontSize: 14, fontWeight: 700, color: "white", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
@@ -104,8 +175,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Real Estate Intelligence
             </div>
           </div>
-          <button className="absolute top-4 right-3 lg:hidden" onClick={() => setMobileOpen(false)}>
-            <X className="w-4 h-4" style={{ color: "var(--sidebar-foreground)" }} />
+          <button
+            aria-label="Close navigation menu"
+            className="lg:hidden flex items-center justify-center rounded-lg ml-auto"
+            style={{ width: 40, height: 40, color: "var(--sidebar-foreground)" }}
+            onClick={() => setMobileOpen(false)}
+          >
+            <X style={{ width: 20, height: 20 }} />
           </button>
         </div>
 
@@ -134,9 +210,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href={item.path}
                   className="flex items-center gap-2.5 transition-colors"
                   style={{
-                    padding: "8px 12px",
+                    padding: "10px 12px",
                     borderRadius: 8,
-                    fontSize: 13.5,
+                    fontSize: 14,
                     fontWeight: isActive ? 600 : 500,
                     color: isActive ? "white" : "var(--sidebar-foreground)",
                     background: isActive ? "var(--sidebar-accent)" : "transparent",
@@ -150,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                   onClick={() => setMobileOpen(false)}
                 >
-                  <Icon style={{ width: 16, height: 16, opacity: isActive ? 1 : 0.7, flexShrink: 0 }} />
+                  <Icon style={{ width: 17, height: 17, opacity: isActive ? 1 : 0.7, flexShrink: 0 }} />
                   {item.label}
                 </Link>
               );
@@ -176,25 +252,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
       )}
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col lg:ml-[236px] min-w-0 overflow-hidden">
 
-        {/* Top bar: page title + live KPI strip */}
+        {/* Mobile app bar: brand + menu + live pill, KPI strip below */}
+        <header
+          className="lg:hidden flex-shrink-0"
+          style={{ background: "var(--card)", borderBottom: "1px solid var(--border)" }}
+        >
+          <div className="flex items-center gap-1 h-14 pl-1 pr-3">
+            <button
+              aria-label="Open navigation menu"
+              onClick={() => setMobileOpen(true)}
+              className="flex items-center justify-center rounded-lg transition-colors"
+              style={{ width: 44, height: 44, color: "var(--foreground)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--accent)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
+              <Menu style={{ width: 22, height: 22 }} />
+            </button>
+            <BrandMark compact />
+            <div className="ml-auto">
+              <LivePill />
+            </div>
+          </div>
+          <div style={{ borderTop: "1px solid var(--border)" }}>
+            <TickerStrip live={live} />
+          </div>
+        </header>
+
+        {/* Desktop top bar: page title + live KPI strip */}
         <div
-          className="flex items-stretch overflow-x-auto flex-shrink-0"
+          className="hidden lg:flex items-stretch overflow-x-auto flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}
         >
-          <button
-            className="lg:hidden flex items-center px-3"
-            style={{ borderRight: "1px solid var(--border)" }}
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="w-4 h-4" />
-          </button>
-
           {/* Page title */}
           <div
             className="flex items-center px-5 flex-shrink-0"
@@ -209,14 +307,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Live KPI strip */}
-          <TickerItem label="Unemployment" value={fmt(live.ohio_unemployment.value, "", "%", 1)} metric={live.ohio_unemployment} />
-          <TickerItem label="Home Value" value={fmtK(live.ohio_median_home_value.value)} metric={live.ohio_median_home_value} />
-          <TickerItem label="Median Rent" value={fmtK(live.ohio_median_rent.value) + "/mo"} metric={live.ohio_median_rent} />
-          <TickerItem label="Homeownership" value={fmt(live.ohio_homeownership_rate.value, "", "%", 1)} metric={live.ohio_homeownership_rate} />
-          <TickerItem label="Listing Price" value={fmtK(live.ohio_listing_price.value)} metric={live.ohio_listing_price} />
-          <TickerItem label="30-Yr Mortgage" value={fmt(live.mortgage_rate_30yr.value, "", "%")} metric={live.mortgage_rate_30yr} />
-          <TickerItem label="Fed Funds" value={fmt(live.fed_funds_rate.value, "", "%")} metric={live.fed_funds_rate} />
-          <TickerItem label="Ohio HPI" value={fmt(live.ohio_hpi.value, "", "", 1)} metric={live.ohio_hpi} />
+          {tickerCells(live).map((t) => (
+            <TickerItem key={t.label} label={t.label} value={t.value} metric={t.metric} />
+          ))}
         </div>
 
         {/* Page content */}
