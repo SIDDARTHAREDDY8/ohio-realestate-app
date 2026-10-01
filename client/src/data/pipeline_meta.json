@@ -1,5 +1,5 @@
 {
-  "last_refresh": "2026-09-01T11:22:19.547179+00:00",
+  "last_refresh": "2026-10-01T12:44:50.913762+00:00",
   "data_sources": [
     "US Census Bureau ACS",
     "Redfin Market Tracker",
@@ -8,6 +8,6 @@
   "counties_covered": 88,
   "census_rows": 440,
   "market_rows": 345625,
-  "economic_rows": 3019,
+  "economic_rows": 3038,
   "market_date_range": "Jan 2012 \u2013 May 2026"
 }
